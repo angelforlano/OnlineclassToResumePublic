@@ -1,0 +1,280 @@
+name: Render LAOS real-source shorts
+
+on:
+  push:
+    branches: [automation/real-clips-20260807]
+    paths: [.github/workflows/render-real-clips.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install renderer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper
+      - name: Create renderer
+        run: |
+          cat > render_real_clips.py <<'PY'
+          from __future__ import annotations
+          
+          import json, re, subprocess, sys
+          from pathlib import Path
+          from typing import Any
+          
+          import requests
+          from PIL import Image, ImageDraw, ImageFont
+          from rapidfuzz import fuzz
+          from faster_whisper import WhisperModel
+          
+          ROOT = Path(__file__).resolve().parent
+          SRC = ROOT / "sources"
+          OUT = ROOT / "output"
+          WORK = ROOT / "work"
+          W, H = 1080, 1920
+          FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+          FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+          
+          ITEMS = [
+              {
+                  "id": "REAL-001", "account": "@angeln.py", "series": "IA SIN HUMO",
+                  "title": "LA IA PERDIÓ LA CARRERA",
+                  "quote": "Although slower, the A.I.-piloted drone completed the course with accuracy",
+                  "quote_es": "Aunque fue más lenta, la IA completó el circuito con precisión.",
+                  "cards": ["RÁPIDO NO ES IGUAL A FIABLE", "UNA DEMO NO ES UN SISTEMA", "MIDE RESULTADOS VERIFICABLES"],
+                  "cta": "¿Velocidad o consistencia?",
+                  "page": "https://www.jpl.nasa.gov/videos/drone-race-human-versus-ai/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20171121JPL-20171102-TECHp-0001-720cc.m4v",
+              },
+              {
+                  "id": "REAL-002", "account": "@laostechnologies", "series": "ROBOTLAB CUT",
+                  "title": "LAS RUEDAS SON MEJORES… HASTA QUE DEJAN DE SERLO",
+                  "quote": "If you can get away with wheels, wheels are great. They're the most efficient ways of getting around. But once you get into terrain that's too rough, then we need to switch over to a different method",
+                  "quote_es": "Las ruedas son geniales… hasta que el terreno exige otro método.",
+                  "cards": ["EL TERRENO DECIDE LA MORFOLOGÍA", "NO COPIES LA FORMA HUMANA POR COSTUMBRE", "MISIÓN PRIMERO · ROBOT DESPUÉS"],
+                  "cta": "Diseña para el problema, no para la foto.",
+                  "page": "https://www.jpl.nasa.gov/videos/crazy-engineering-robosimian-robot/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20150603JPL-20150602-mTech-0000-CrazyEngineering_RoboSimian-A-1280.m4v",
+              },
+              {
+                  "id": "REAL-003", "account": "@angeln.py", "series": "ERROR CARO",
+                  "title": "NASA FALLÓ VARIAS VECES",
+                  "quote": "we've been unsuccessful. As you can see, this is a very challenging problem. And sometimes it appears intractable, but we're engineers and we love solving challenging problems",
+                  "quote_es": "Lo intentaron varias veces sin éxito. Después cambiaron la hipótesis.",
+                  "cards": ["FALLAR NO ES REPETIR A CIEGAS", "LOGS → HIPÓTESIS → PRUEBA", "EL ERROR SIRVE SI CAMBIA EL SIGUIENTE INTENTO"],
+                  "cta": "La ingeniería empieza cuando el plan deja de funcionar.",
+                  "page": "https://www.jpl.nasa.gov/videos/nasa-insights-robotic-arm-helps-out-its-mole-on-mars/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosinsight20191003JPL-20191003-INSIGHf-0001-720cc.m4v",
+              },
+          ]
+          
+          
+          def run(cmd: list[str], capture: bool = False, timeout: int = 900) -> subprocess.CompletedProcess[str]:
+              print("+", " ".join(cmd), flush=True)
+              return subprocess.run(cmd, check=True, text=True,
+                                    stdout=subprocess.PIPE if capture else None,
+                                    stderr=subprocess.PIPE if capture else None,
+                                    timeout=timeout)
+          
+          
+          def duration(path: Path) -> float:
+              p = run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                       "-of", "default=nw=1:nk=1", str(path)], capture=True)
+              return float(p.stdout.strip())
+          
+          
+          def download(url: str, path: Path) -> None:
+              if path.exists() and path.stat().st_size > 1_000_000:
+                  return
+              with requests.get(url, stream=True, timeout=120,
+                                headers={"User-Agent": "Mozilla/5.0 LAOS editorial renderer"}) as r:
+                  r.raise_for_status()
+                  with path.open("wb") as f:
+                      for chunk in r.iter_content(1024 * 1024):
+                          if chunk:
+                              f.write(chunk)
+              if path.stat().st_size < 1_000_000:
+                  raise RuntimeError(f"Source too small: {path}")
+          
+          
+          def norm(text: str) -> str:
+              return re.sub(r"[^a-z0-9 ]", " ", text.lower()).replace("  ", " ").strip()
+          
+          
+          def find_quote(model: WhisperModel, source: Path, anchor: str) -> tuple[float, float, str, float]:
+              segs, _ = model.transcribe(str(source), language="en", beam_size=3, vad_filter=True)
+              rows = [{"start": float(s.start), "end": float(s.end), "text": s.text.strip()} for s in segs]
+              best: tuple[float, float, str, float] | None = None
+              target = norm(anchor)
+              for i in range(len(rows)):
+                  parts: list[str] = []
+                  for j in range(i, min(i + 8, len(rows))):
+                      parts.append(rows[j]["text"])
+                      text = " ".join(parts)
+                      score = max(fuzz.partial_ratio(target, norm(text)), fuzz.token_set_ratio(target, norm(text)))
+                      if best is None or score > best[3]:
+                          best = (rows[i]["start"], rows[j]["end"], text, float(score))
+              if best is None:
+                  raise RuntimeError("No transcript")
+              start = max(0.0, best[0] - 0.55)
+              end = min(start + 10.0, best[1] + 0.7)
+              print(f"MATCH {best[3]:.1f}% {start:.2f}-{end:.2f}: {best[2]}")
+              return start, end, best[2], best[3]
+          
+          
+          def fnt(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+              return ImageFont.truetype(FONT_BOLD if bold else FONT_REG, size)
+          
+          
+          def wrap(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
+              lines: list[str] = []
+              current = ""
+              for word in text.split():
+                  test = word if not current else current + " " + word
+                  if draw.textbbox((0, 0), test, font=font)[2] <= max_w:
+                      current = test
+                  else:
+                      if current:
+                          lines.append(current)
+                      current = word
+              if current:
+                  lines.append(current)
+              return lines
+          
+          
+          def centered(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont,
+                       y: int, max_w: int, fill: tuple[int, int, int, int]) -> int:
+              for line in wrap(draw, text, font, max_w):
+                  box = draw.textbbox((0, 0), line, font=font)
+                  draw.text(((W - (box[2] - box[0])) / 2, y), line, font=font, fill=fill,
+                            stroke_width=2, stroke_fill=(0, 0, 0, 170))
+                  y += (box[3] - box[1]) + 12
+              return y
+          
+          
+          def overlay(item: dict[str, Any], kind: str, main: str, sub: str, path: Path) -> None:
+              img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+              d = ImageDraw.Draw(img, "RGBA")
+              d.rounded_rectangle((40, 38, 510, 104), radius=30, fill=(3, 8, 17, 220), outline=(64, 166, 255, 160), width=2)
+              d.text((66, 59), f"{item['account']} · {item['series']}", font=fnt(25, True), fill=(250, 252, 255, 255))
+              d.rounded_rectangle((55, 1030, 1025, 1810), radius=42, fill=(3, 8, 16, 212), outline=(255, 255, 255, 38), width=2)
+              tag = kind.upper()
+              d.rounded_rectangle((94, 1080, 94 + max(190, len(tag) * 18), 1142), radius=28, fill=(38, 126, 245, 235))
+              d.text((120, 1097), tag, font=fnt(24, True), fill=(255, 255, 255, 255))
+              y = 1210
+              y = centered(d, main, fnt(61, True), y, 850, (255, 255, 255, 255))
+              if sub:
+                  y += 30
+                  centered(d, sub, fnt(38, True), y, 850, (255, 221, 95, 255))
+              d.text((52, H - 52), "Courtesy NASA/JPL-Caltech · edición y análisis LAOS · sin afiliación",
+                     font=fnt(18), fill=(235, 241, 250, 220))
+              img.save(path)
+          
+          
+          def render(source: Path, start: float, seconds: float, png: Path, out: Path, original_audio: bool) -> None:
+              inputs = ["ffmpeg", "-y", "-ss", f"{start:.3f}", "-t", f"{seconds:.3f}", "-i", str(source),
+                        "-loop", "1", "-i", str(png)]
+              if not original_audio:
+                  inputs += ["-f", "lavfi", "-t", f"{seconds:.3f}", "-i", "sine=frequency=58:sample_rate=48000"]
+              vf = ("[0:v]split=2[bg][fg];"
+                    "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=34:1,eq=brightness=-0.22[bg2];"
+                    "[fg]scale=1000:1050:force_original_aspect_ratio=decrease[fg2];"
+                    "[bg2][fg2]overlay=(W-w)/2:260[scene];[scene][1:v]overlay=0:0,format=yuv420p[v]")
+              inputs += ["-filter_complex", vf, "-map", "[v]"]
+              if original_audio:
+                  inputs += ["-map", "0:a?", "-af", "loudnorm=I=-15:LRA=11:TP=-1.5,aresample=48000"]
+              else:
+                  inputs += ["-map", "2:a", "-af", "volume=0.025,afade=t=in:st=0:d=0.4,afade=t=out:st=%0.2f:d=0.4" % max(0.4, seconds - 0.4)]
+              inputs += ["-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                         "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-shortest", str(out)]
+              run(inputs)
+          
+          
+          def concat(parts: list[Path], out: Path) -> None:
+              listing = out.with_suffix(".txt")
+              listing.write_text("".join(f"file '{p.resolve().as_posix()}'\n" for p in parts), encoding="utf-8")
+              run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
+                   "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+                   "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", str(out)])
+          
+          
+          def main() -> None:
+              for p in (SRC, OUT, WORK):
+                  p.mkdir(parents=True, exist_ok=True)
+              model = WhisperModel("tiny.en", device="cpu", compute_type="int8")
+              results = []
+              for item in ITEMS:
+                  print(f"\n=== {item['id']} {item['title']} ===")
+                  work = WORK / item["id"]
+                  work.mkdir(parents=True, exist_ok=True)
+                  source = SRC / f"{item['id']}.m4v"
+                  download(item["url"], source)
+                  total = duration(source)
+                  qstart, qend, matched, score = find_quote(model, source, item["quote"])
+                  parts: list[Path] = []
+                  qpng = work / "quote.png"
+                  overlay(item, "CLIP REAL", item["title"], item["quote_es"], qpng)
+                  qpart = work / "00_quote.mp4"
+                  render(source, qstart, qend - qstart, qpng, qpart, True)
+                  parts.append(qpart)
+                  positions = [0.10, 0.43, 0.72]
+                  for idx, card in enumerate(item["cards"], 1):
+                      sec = 5.2
+                      start = min(max(0.0, total * positions[idx - 1]), max(0.0, total - sec - 0.5))
+                      if qstart - 1 < start < qend + 1:
+                          start = min(max(0.0, total - sec - 0.5), qend + 3)
+                      png = work / f"card_{idx}.png"
+                      overlay(item, f"IDEA {idx}", card, "", png)
+                      part = work / f"0{idx}_card.mp4"
+                      render(source, start, sec, png, part, False)
+                      parts.append(part)
+                  cpng = work / "cta.png"
+                  overlay(item, "CONCLUSIÓN", item["cta"], "", cpng)
+                  cpart = work / "04_cta.mp4"
+                  render(source, min(max(0.0, total - 4.0), total * 0.88), 3.4, cpng, cpart, False)
+                  parts.append(cpart)
+                  final = OUT / f"{item['id']}_{re.sub(r'[^a-z0-9]+', '-', norm(item['title'])).strip('-')}.mp4"
+                  concat(parts, final)
+                  cover = final.with_suffix(".jpg")
+                  run(["ffmpeg", "-y", "-ss", "0.7", "-i", str(final), "-frames:v", "1", "-q:v", "2", str(cover)])
+                  results.append({"id": item["id"], "title": item["title"], "account": item["account"],
+                                  "source_page": item["page"], "source_media": item["url"],
+                                  "quote_match_score": round(score, 1), "matched_text": matched,
+                                  "source_start": round(qstart, 2), "source_end": round(qend, 2),
+                                  "duration_seconds": round(duration(final), 2), "output": final.name,
+                                  "credit": "Courtesy NASA/JPL-Caltech",
+                                  "rights_note": "Editorial/informational prototype. Retain credit; do not imply endorsement; review identifiable-person use before paid advertising."})
+              (OUT / "manifest.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+              print(json.dumps(results, ensure_ascii=False, indent=2))
+          
+          
+          if __name__ == "__main__":
+              main()
+          PY
+      - name: Render three real clips
+        run: python render_real_clips.py
+      - name: Verify outputs
+        run: |
+          test "$(find output -maxdepth 1 -name '*.mp4' | wc -l)" -eq 3
+          for f in output/*.mp4; do
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "$f"
+          done
+      - name: Upload finished videos
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-01
+          path: output/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
