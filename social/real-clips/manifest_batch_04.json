@@ -1,0 +1,70 @@
+[
+  {
+    "id": "REAL-013",
+    "account": "@angeln.py",
+    "series": "ARQUITECTURA REAL",
+    "title": "LA GRAVEDAD ES SU MOTOR",
+    "quote_en": "I can use that gravity to bend my trajectory and harness that power, that's our engine. It's our tour design engine.",
+    "quote_es": "Podemos usar la gravedad para doblar la trayectoria. Ese es nuestro motor.",
+    "analysis_voice": "La ingeniería elegante no siempre añade potencia. A veces aprovecha una fuerza que ya existe. Cassini convirtió la gravedad de Titán en parte de su sistema de navegación. En arquitectura ocurre lo mismo: una restricción puede convertirse en infraestructura.",
+    "cards": [
+      "NO AÑADAS FUERZA POR DEFECTO",
+      "APROVECHA EL ENTORNO",
+      "CONVIERTE LA RESTRICCIÓN EN MOTOR"
+    ],
+    "cta": "La mejor solución puede estar ya dentro del problema.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-astrodynamics/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology2017041920170419-TECHf-0001-720cc.m4v"
+  },
+  {
+    "id": "REAL-014",
+    "account": "@laostechnologies",
+    "series": "RESOURCE ENGINEERING",
+    "title": "JÚPITER TE DA 1/25 DE LA LUZ",
+    "quote_en": "Instead of one fifth the amount of power, we have one twenty-fifth the amount of power. So, we need to have a lot of area on our solar arrays because the spacecraft is so far away from the sun.",
+    "quote_es": "En Júpiter no tienes una quinta parte de energía: tienes una veinticincoava parte.",
+    "analysis_voice": "El entorno cambia el presupuesto. Juno no podía fingir que estaba cerca del Sol: necesitó más superficie, mejor eficiencia y una arquitectura ajustada a quinientos vatios. Un sistema serio empieza midiendo los recursos reales, no diseñando para un mundo imaginario.",
+    "cards": [
+      "MIDE EL ENTORNO REAL",
+      "REDISEÑA EL PRESUPUESTO",
+      "HAZ MÁS CON MENOS"
+    ],
+    "cta": "La eficiencia empieza aceptando la restricción.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-flying-solar-to-jupiter/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosjuno20160622JPL-20160621-TECHf-0001-720cc.m4v"
+  },
+  {
+    "id": "REAL-015",
+    "account": "@laostechnologies",
+    "series": "ROBOTICS BREAKDOWN",
+    "title": "UN YO-YO PARA BAJAR POR ACANTILADOS",
+    "quote_en": "The best way to think about this rover is, think of a yo-yo. By reeling and unreeling its own tether that it carries with it, it's able to lower itself over any type of terrain.",
+    "quote_es": "Piensa en un yo-yo: enrolla y desenrolla su propia cuerda para descender.",
+    "analysis_voice": "Cuando las ruedas no resuelven el terreno, añadir ruedas mejores puede ser la pregunta equivocada. Axel cambió la geometría del problema: dos ruedas, una cuerda y acceso a pendientes imposibles para un rover convencional.",
+    "cards": [
+      "NO MEJORES LA RESPUESTA EQUIVOCADA",
+      "CAMBIA LA GEOMETRÍA DEL PROBLEMA",
+      "MENOS PIEZAS · MÁS CAPACIDAD"
+    ],
+    "cta": "Innovar también es quitar lo que dabas por obligatorio.",
+    "source_page": "https://www.jpl.nasa.gov/videos/axel-rover/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnologyaxel20090204axel20090204-1280.m4v"
+  },
+  {
+    "id": "REAL-016",
+    "account": "@angeln.py",
+    "series": "LONGEVITY CUT",
+    "title": "DISEÑADO PARA 2,5 AÑOS. DURÓ 13",
+    "quote_en": "This mission was designed to last at least two-and-a-half years. Thirteen years later, Spitzer has operated far beyond the scope of the original mission.",
+    "quote_es": "Fue diseñado para dos años y medio. Trece años después seguía operando.",
+    "analysis_voice": "La longevidad no llega solo del diseño inicial. Llega de operaciones, precisión, cambios controlados y equipos capaces de adaptar el sistema sin destruirlo. Un producto mantenible no permanece congelado: aprende a vivir más tiempo.",
+    "cards": [
+      "DISEÑA PARA CUMPLIR",
+      "OPERA PARA APRENDER",
+      "EVOLUCIONA PARA DURAR"
+    ],
+    "cta": "La mantenibilidad es una forma de multiplicar el tiempo.",
+    "source_page": "https://www.jpl.nasa.gov/videos/spitzer-beyond/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosspitzer20160826JPL-20160825-SPITZRf-0001-720.m4v"
+  }
+]
