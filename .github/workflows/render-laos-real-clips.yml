@@ -1,4 +1,4 @@
-name: Render LAOS real interview clips batch 02
+name: Render LAOS real interview clips batch 03
 
 on:
   push:
@@ -24,37 +24,6 @@ jobs:
         with:
           ref: automation/laos-real-clips-20260807
 
-      - name: Enable verified manual soundbites
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          script = Path("social/real-clips/render.py")
-          text = script.read_text(encoding="utf-8")
-          needle = '    start, end, matched, score = find_quote(segments, item["quote_en"])\n'
-          replacement = "\n".join([
-              '    if "manual_start" in item and "manual_end" in item:',
-              '        start = float(item["manual_start"])',
-              '        end = float(item["manual_end"])',
-              '        matched = item["quote_en"]',
-              '        score = 100.0',
-              '        print(f"Using verified manual soundbite @ {start:.2f}-{end:.2f}")',
-              '    else:',
-              '        start, end, matched, score = find_quote(segments, item["quote_en"])',
-              '',
-          ])
-          if needle not in text:
-              raise SystemExit("Expected renderer insertion point not found")
-          script.write_text(text.replace(needle, replacement), encoding="utf-8")
-
-          manifest_path = Path("social/real-clips/manifest_batch_02.json")
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-          by_id = {item["id"]: item for item in manifest}
-          by_id["REAL-006"].update({"manual_start": 11.8, "manual_end": 20.5})
-          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-          PY
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -69,7 +38,7 @@ jobs:
 
       - name: Render four real-source vertical clips
         working-directory: social/real-clips
-        run: python render.py --manifest manifest_batch_02.json --model tiny.en
+        run: python render.py --manifest manifest_batch_03.json --model tiny.en
 
       - name: Verify outputs
         working-directory: social/real-clips
@@ -84,7 +53,7 @@ jobs:
       - name: Upload finished MP4s
         uses: actions/upload-artifact@v4
         with:
-          name: LAOS-real-clips-batch-02
+          name: LAOS-real-clips-batch-03
           path: |
             social/real-clips/output/*.mp4
             social/real-clips/output/*.jpg
