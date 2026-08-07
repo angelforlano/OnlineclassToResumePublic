@@ -1,29 +1,63 @@
 [
   {
+    "id": "REAL-011",
+    "account": "@angeln.py",
+    "series": "AGENTES SIN HUMO",
+    "title": "HUMANOS EN EL BUCLE, IA AL VOLANTE",
+    "quote_en": "Humans are still in the loop. We're going to tell her where to go. Curiosity is going to decide how to get there.",
+    "quote_es": "Los humanos siguen en el bucle. Nosotros marcamos el destino; Curiosity decide cómo llegar.",
+    "analysis_voice": "Esta frase resume una arquitectura de agentes mucho más sana que darles libertad infinita. El humano define objetivo y límites. El sistema autónomo decide el camino y demuestra qué hizo. Autonomía no significa ausencia de control.",
+    "cards": [
+      "HUMANO → OBJETIVO Y LÍMITES",
+      "AGENTE → PLAN Y EJECUCIÓN",
+      "EVIDENCIA → TESTS Y RESULTADO"
+    ],
+    "cta": "Un buen agente sabe decidir el camino, no inventar el destino.",
+    "source_page": "https://www.jpl.nasa.gov/videos/leave-the-driving-to-autonav/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20130919CoM20130919-1280.m4v"
+  },
+  {
+    "id": "REAL-012",
+    "account": "@laostechnologies",
+    "series": "PLATFORM THINKING",
+    "title": "NASA DEJÓ DE CONSTRUIR UNA RED POR MISIÓN",
+    "quote_en": "Rather than having each of the missions build their own ground network.",
+    "quote_es": "En vez de hacer que cada misión construyera su propia red terrestre.",
+    "analysis_voice": "Eso es exactamente lo que significa construir plataforma. Cada producto no debería reinventar identidad, IA, observabilidad o infraestructura. Una red común convierte diez integraciones aisladas en una capacidad reutilizable.",
+    "cards": [
+      "NO DUPLIQUES INFRAESTRUCTURA",
+      "CONSTRUYE UNA CAPACIDAD COMÚN",
+      "DEJA QUE LOS PRODUCTOS LA CONSUMAN"
+    ],
+    "cta": "La plataforma gana cuando el siguiente producto empieza más arriba.",
+    "source_page": "https://www.jpl.nasa.gov/videos/the-deep-space-network-50-years-of-interplanetary-wifi/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosdsn20131219dsn20131218-1280.m4v"
+  },
+  {
     "id": "REAL-013",
     "account": "@angeln.py",
-    "series": "ARQUITECTURA REAL",
-    "title": "LA GRAVEDAD ES SU MOTOR",
-    "quote_en": "I can use that gravity to bend my trajectory and harness that power, that's our engine. It's our tour design engine.",
-    "quote_es": "Podemos usar la gravedad para doblar la trayectoria. Ese es nuestro motor.",
-    "analysis_voice": "La ingeniería elegante no siempre añade potencia. A veces aprovecha una fuerza que ya existe. Cassini convirtió la gravedad de Titán en parte de su sistema de navegación. En arquitectura ocurre lo mismo: una restricción puede convertirse en infraestructura.",
+    "series": "INGENIERÍA EN 30S",
+    "title": "ACELERACIÓN CON PACIENCIA",
+    "quote_en": "It's what I like to call acceleration with patience.",
+    "quote_es": "Es lo que me gusta llamar aceleración con paciencia.",
+    "analysis_voice": "Un motor iónico empuja poquísimo, pero puede hacerlo durante meses o años. La lección para software es brutalmente simple: una mejora pequeña, estable y repetida puede superar a un gran rediseño que nunca llega a producción.",
     "cards": [
-      "NO AÑADAS FUERZA POR DEFECTO",
-      "APROVECHA EL ENTORNO",
-      "CONVIERTE LA RESTRICCIÓN EN MOTOR"
+      "POCA FUERZA · MUCHO TIEMPO",
+      "CONSISTENCIA > ESPECTÁCULO",
+      "ACUMULA MEJORAS QUE SOBREVIVAN"
     ],
-    "cta": "La mejor solución puede estar ya dentro del problema.",
-    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-astrodynamics/",
-    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology2017041920170419-TECHf-0001-720cc.m4v"
+    "cta": "La velocidad compuesta también existe en ingeniería.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-ion-propulsion-for-the-dawn-mission/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosdawn2014122920141229-1280.m4v"
   },
   {
     "id": "REAL-014",
     "account": "@laostechnologies",
     "series": "RESOURCE ENGINEERING",
-    "title": "JÚPITER TE DA 1/25 DE LA LUZ",
+    "title": "JÚPITER TE DEJA 1/25 DE LA LUZ",
     "quote_en": "Instead of one fifth the amount of power, we have one twenty-fifth the amount of power. So, we need to have a lot of area on our solar arrays because the spacecraft is so far away from the sun.",
     "quote_es": "En Júpiter no tienes una quinta parte de energía: tienes una veinticincoava parte.",
-    "analysis_voice": "El entorno cambia el presupuesto. Juno no podía fingir que estaba cerca del Sol: necesitó más superficie, mejor eficiencia y una arquitectura ajustada a quinientos vatios. Un sistema serio empieza midiendo los recursos reales, no diseñando para un mundo imaginario.",
+    "analysis_voice": "Juno no podía diseñarse como si estuviera cerca del Sol. El entorno cambió todo el presupuesto energético. En sistemas ocurre igual: CPU, RAM, GPU, red y coste son restricciones de diseño, no detalles que se arreglan al final.",
     "cards": [
       "MIDE EL ENTORNO REAL",
       "REDISEÑA EL PRESUPUESTO",
@@ -32,39 +66,5 @@
     "cta": "La eficiencia empieza aceptando la restricción.",
     "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-flying-solar-to-jupiter/",
     "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosjuno20160622JPL-20160621-TECHf-0001-720cc.m4v"
-  },
-  {
-    "id": "REAL-015",
-    "account": "@laostechnologies",
-    "series": "ROBOTICS BREAKDOWN",
-    "title": "UN YO-YO PARA BAJAR POR ACANTILADOS",
-    "quote_en": "The best way to think about this rover is, think of a yo-yo. By reeling and unreeling its own tether that it carries with it, it's able to lower itself over any type of terrain.",
-    "quote_es": "Piensa en un yo-yo: enrolla y desenrolla su propia cuerda para descender.",
-    "analysis_voice": "Cuando las ruedas no resuelven el terreno, añadir ruedas mejores puede ser la pregunta equivocada. Axel cambió la geometría del problema: dos ruedas, una cuerda y acceso a pendientes imposibles para un rover convencional.",
-    "cards": [
-      "NO MEJORES LA RESPUESTA EQUIVOCADA",
-      "CAMBIA LA GEOMETRÍA DEL PROBLEMA",
-      "MENOS PIEZAS · MÁS CAPACIDAD"
-    ],
-    "cta": "Innovar también es quitar lo que dabas por obligatorio.",
-    "source_page": "https://www.jpl.nasa.gov/videos/axel-rover/",
-    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnologyaxel20090204axel20090204-1280.m4v"
-  },
-  {
-    "id": "REAL-016",
-    "account": "@angeln.py",
-    "series": "LONGEVITY CUT",
-    "title": "DISEÑADO PARA 2,5 AÑOS. DURÓ 13",
-    "quote_en": "This mission was designed to last at least two-and-a-half years. Thirteen years later, Spitzer has operated far beyond the scope of the original mission.",
-    "quote_es": "Fue diseñado para dos años y medio. Trece años después seguía operando.",
-    "analysis_voice": "La longevidad no llega solo del diseño inicial. Llega de operaciones, precisión, cambios controlados y equipos capaces de adaptar el sistema sin destruirlo. Un producto mantenible no permanece congelado: aprende a vivir más tiempo.",
-    "cards": [
-      "DISEÑA PARA CUMPLIR",
-      "OPERA PARA APRENDER",
-      "EVOLUCIONA PARA DURAR"
-    ],
-    "cta": "La mantenibilidad es una forma de multiplicar el tiempo.",
-    "source_page": "https://www.jpl.nasa.gov/videos/spitzer-beyond/",
-    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosspitzer20160826JPL-20160825-SPITZRf-0001-720.m4v"
   }
 ]
