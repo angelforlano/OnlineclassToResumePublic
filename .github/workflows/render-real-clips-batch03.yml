@@ -1,0 +1,509 @@
+name: Render LAOS real-source shorts batch 03
+
+on:
+  push:
+    branches: [automation/real-clips-20260807]
+    paths: [.github/workflows/render-real-clips-batch03.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install media stack
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper
+
+      - name: Create batch 03 renderer
+        run: |
+          cat > render_batch03.py <<'PY'
+          from __future__ import annotations
+
+          import json
+          import math
+          import re
+          import subprocess
+          from pathlib import Path
+          from typing import Any
+
+          import requests
+          from PIL import Image, ImageDraw, ImageFont
+          from rapidfuzz import fuzz
+
+          ROOT = Path(__file__).resolve().parent
+          SRC = ROOT / "sources-batch03"
+          WORK = ROOT / "work-batch03"
+          OUT = ROOT / "output-batch03"
+          W, H = 1080, 1920
+          BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+          REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+          ITEMS: list[dict[str, Any]] = [
+              {
+                  "id": "REAL-007",
+                  "account": "@angeln.py",
+                  "series": "BUILD IN PUBLIC",
+                  "title": "DE UNA SERVILLETA A MARTE",
+                  "quote_en": "It's gone from designs on napkins, to Powerpoint, you know, to CAD drawings, to blueprints, and now it's a rover",
+                  "quote_es": "Pasó de diseños en servilletas a CAD, planos… y ahora es un rover.",
+                  "cards": [
+                      ("DOCUMENTAR NO ES CONSTRUIR", "el hito llega cuando el sistema se mueve"),
+                      ("INTEGRAR VENCE A ACUMULAR", "piezas de muchos equipos convergen en un producto"),
+                      ("LA PRUEBA ES FÍSICA", "una idea cambia de categoría al tocar el mundo real"),
+                  ],
+                  "cta": "La arquitectura se demuestra cuando algo se mueve.",
+                  "page": "https://www.jpl.nasa.gov/videos/building-curiosity-first-test-drive-for-next-mars-rover/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20100723bldgcuriosity20100723-1280.m4v",
+                  "fact_note": "El primer movimiento de Curiosity sobre su propio sistema de movilidad convirtió años de bocetos, CAD, planos e integración distribuida en hardware real.",
+                  "fallback": [10.0, 21.0],
+              },
+              {
+                  "id": "REAL-008",
+                  "account": "@laostechnologies",
+                  "series": "SRE EN MARTE",
+                  "title": "LOS INGENIEROS AMAN LO ABURRIDO",
+                  "quote_en": "Engineers love boring. Boring means clear skies, no problems, work is a little easier, and scientists get data they want",
+                  "quote_es": "Los ingenieros aman lo aburrido: cielo limpio, cero problemas y datos llegando.",
+                  "cards": [
+                      ("PRODUCCIÓN DEBE SER ABURRIDA", "si cada día es emocionante, algo falla"),
+                      ("LOS WORKAROUNDS SALVAN MISIONES", "degradar bien también es ingeniería"),
+                      ("DIEZ AÑOS SIN TOCAR EL HARDWARE", "software, pruebas y paciencia mantuvieron la misión"),
+                  ],
+                  "cta": "La mejor infraestructura no presume: aguanta.",
+                  "page": "https://www.jpl.nasa.gov/videos/10-years-on-mars-operating-a-rover/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmer20140123bMER10Challenges20140123-1280.m4v",
+                  "fact_note": "Los equipos de Spirit y Opportunity mantuvieron hardware no reparable mediante diagnóstico, pruebas terrestres y workarounds enviados a cientos de millones de kilómetros.",
+                  "fallback": [8.0, 20.0],
+              },
+              {
+                  "id": "REAL-009",
+                  "account": "@laostechnologies",
+                  "series": "CALIDAD EXTREMA",
+                  "title": "LA CONTAMINACIÓN PUEDE INVENTAR VIDA",
+                  "quote_en": "We don't want to have these samples come back from Mars and discover life in them but then realize that oh, that's life that was in the apparatus when we sent it to Mars",
+                  "quote_es": "No querían descubrir vida… y descubrir después que la habían enviado desde la Tierra.",
+                  "cards": [
+                      ("DATOS CONTAMINADOS", "pueden fabricar una conclusión falsa"),
+                      ("TRAZABILIDAD ANTES QUE ÉPICA", "cada paso debe dejar evidencia"),
+                      ("GRANDES HALLAZGOS", "exigen pruebas que sobrevivan al escrutinio"),
+                  ],
+                  "cta": "Sin cadena de evidencia, un hallazgo es solo una historia.",
+                  "page": "https://www.jpl.nasa.gov/videos/perseverances-sample-tubes-ready-for-mars/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/Perseverances_Sample_Tubes_Ready_for_Mars_-_720.m4v",
+                  "fact_note": "El sistema de muestras de Perseverance exigió niveles de limpieza inéditos para impedir que contaminación terrestre pareciera evidencia de vida marciana.",
+                  "fallback": [30.0, 42.0],
+              },
+              {
+                  "id": "REAL-010",
+                  "account": "@angeln.py",
+                  "series": "DEBUGGING REAL",
+                  "title": "PRUEBA EN TIERRA. EJECUTA EN MARTE.",
+                  "quote_en": "What we want to be able to do is to experiment with different extraction techniques down here on Earth before we actually do them for real up on Mars",
+                  "quote_es": "Probaron distintas técnicas en la Tierra antes de ejecutarlas de verdad en Marte.",
+                  "cards": [
+                      ("REPRODUCE EL FALLO", "sin un caso repetible solo tienes una anécdota"),
+                      ("PRUEBA EN UN ENTORNO SEGURO", "el sandbox permite equivocarse barato"),
+                      ("MIDE TAMBIÉN EL TIEMPO", "funcionar tarde puede equivaler a no funcionar"),
+                  ],
+                  "cta": "Un buen sandbox convierte el miedo en evidencia.",
+                  "page": "https://www.jpl.nasa.gov/videos/free-spirit-into-the-sandbox/",
+                  "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmermer20090701mer20090701-1280.m4v",
+                  "fact_note": "JPL reprodujo en una caja de arena la situación de Spirit para comparar técnicas de extracción y estimar no solo si funcionarían, sino cuánto tardarían.",
+                  "fallback": [18.0, 34.0],
+              },
+          ]
+
+          def run(cmd: list[str], *, capture: bool = False, timeout: int = 1800) -> subprocess.CompletedProcess[str]:
+              print("+", " ".join(cmd), flush=True)
+              return subprocess.run(
+                  cmd,
+                  check=True,
+                  text=True,
+                  stdout=subprocess.PIPE if capture else None,
+                  stderr=subprocess.PIPE if capture else None,
+                  timeout=timeout,
+              )
+
+          def duration(path: Path) -> float:
+              result = run(
+                  [
+                      "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                      "-of", "default=noprint_wrappers=1:nokey=1", str(path),
+                  ],
+                  capture=True,
+              )
+              return float(result.stdout.strip())
+
+          def download(url: str, destination: Path) -> None:
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              if destination.exists() and destination.stat().st_size > 1_000_000:
+                  return
+              with requests.get(
+                  url,
+                  stream=True,
+                  timeout=180,
+                  headers={"User-Agent": "Mozilla/5.0 LAOS editorial renderer"},
+              ) as response:
+                  response.raise_for_status()
+                  with destination.open("wb") as handle:
+                      for chunk in response.iter_content(1024 * 1024):
+                          if chunk:
+                              handle.write(chunk)
+              if destination.stat().st_size < 1_000_000:
+                  raise RuntimeError(f"Source is unexpectedly small: {destination}")
+
+          def normalize(text: str) -> str:
+              return re.sub(r"[^a-z0-9 ]+", " ", text.lower()).strip()
+
+          def transcribe(source: Path, transcript_path: Path) -> list[dict[str, Any]]:
+              if transcript_path.exists():
+                  return json.loads(transcript_path.read_text(encoding="utf-8"))
+              from faster_whisper import WhisperModel
+
+              model = WhisperModel("base.en", device="cpu", compute_type="int8")
+              segments, _ = model.transcribe(
+                  str(source),
+                  language="en",
+                  beam_size=4,
+                  vad_filter=False,
+                  condition_on_previous_text=True,
+              )
+              rows = [
+                  {"start": float(segment.start), "end": float(segment.end), "text": segment.text.strip()}
+                  for segment in segments
+                  if segment.text.strip()
+              ]
+              transcript_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+              return rows
+
+          def find_quote(
+              segments: list[dict[str, Any]],
+              quote: str,
+              fallback: list[float],
+          ) -> tuple[float, float, str, float, bool]:
+              target = normalize(quote)
+              best: tuple[float, float, str, float] | None = None
+              for i in range(len(segments)):
+                  texts: list[str] = []
+                  for j in range(i, min(len(segments), i + 8)):
+                      texts.append(segments[j]["text"])
+                      candidate = " ".join(texts)
+                      norm = normalize(candidate)
+                      score = max(
+                          fuzz.ratio(target, norm),
+                          fuzz.partial_ratio(target, norm),
+                          fuzz.token_set_ratio(target, norm),
+                      )
+                      current = (float(segments[i]["start"]), float(segments[j]["end"]), candidate, float(score))
+                      if best is None or current[3] > best[3]:
+                          best = current
+              if best is None or best[3] < 56:
+                  print(f"Low quote confidence; using fallback {fallback}. Best={best}")
+                  return float(fallback[0]), float(fallback[1]), best[2] if best else "", best[3] if best else 0.0, True
+              start = max(0.0, best[0] - 0.55)
+              end = best[1] + 0.65
+              if end - start > 12.0:
+                  end = start + 12.0
+              if end - start < 5.0:
+                  end = start + 5.0
+              return start, end, best[2], best[3], False
+
+          def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+              return ImageFont.truetype(BOLD if bold else REG, size)
+
+          def wrap(draw: ImageDraw.ImageDraw, text: str, selected_font: ImageFont.FreeTypeFont, max_width: int) -> list[str]:
+              lines: list[str] = []
+              current = ""
+              for word in text.split():
+                  trial = word if not current else f"{current} {word}"
+                  if draw.textbbox((0, 0), trial, font=selected_font)[2] <= max_width:
+                      current = trial
+                  else:
+                      if current:
+                          lines.append(current)
+                      current = word
+              if current:
+                  lines.append(current)
+              return lines
+
+          def centered(
+              draw: ImageDraw.ImageDraw,
+              text: str,
+              selected_font: ImageFont.FreeTypeFont,
+              y: int,
+              max_width: int,
+              fill: tuple[int, int, int, int],
+              spacing: int = 12,
+          ) -> int:
+              for line in wrap(draw, text, selected_font, max_width):
+                  box = draw.textbbox((0, 0), line, font=selected_font)
+                  x = (W - (box[2] - box[0])) / 2
+                  draw.text(
+                      (x, y),
+                      line,
+                      font=selected_font,
+                      fill=fill,
+                      stroke_width=2,
+                      stroke_fill=(0, 0, 0, 180),
+                  )
+                  y += box[3] - box[1] + spacing
+              return y
+
+          def base_overlay(item: dict[str, Any], label: str) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+              image = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+              draw = ImageDraw.Draw(image, "RGBA")
+              draw.rounded_rectangle((36, 36, 600, 106), radius=34, fill=(3, 8, 17, 225), outline=(64, 169, 255, 170), width=2)
+              draw.text((66, 59), f"{item['account']} · {item['series']}", font=font(24, True), fill=(250, 252, 255, 255))
+              draw.rounded_rectangle((818, 40, 1040, 104), radius=31, fill=(37, 127, 245, 238))
+              box = draw.textbbox((0, 0), label, font=font(22, True))
+              draw.text((929 - (box[2] - box[0]) / 2, 61), label, font=font(22, True), fill=(255, 255, 255, 255))
+              draw.text(
+                  (44, H - 52),
+                  "Courtesy NASA/JPL-Caltech · análisis editorial LAOS · sin afiliación",
+                  font=font(18),
+                  fill=(236, 242, 250, 226),
+              )
+              return image, draw
+
+          def sound_overlay(item: dict[str, Any], output: Path) -> None:
+              image, draw = base_overlay(item, "CLIP REAL")
+              draw.rounded_rectangle((48, 1060, 1032, 1818), radius=46, fill=(2, 7, 14, 216), outline=(255, 255, 255, 38), width=2)
+              y = centered(draw, item["title"], font(61, True), 1120, 890, (255, 255, 255, 255), 8) + 28
+              centered(draw, item["quote_es"], font(37, True), y, 850, (255, 220, 91, 255), 12)
+              image.save(output)
+
+          def card_overlay(item: dict[str, Any], main: str, sub: str, index: int, output: Path) -> None:
+              image, draw = base_overlay(item, f"{index}/3")
+              draw.rounded_rectangle((56, 1050, 1024, 1810), radius=50, fill=(2, 7, 14, 226), outline=(59, 166, 255, 128), width=3)
+              draw.rounded_rectangle((102, 1110, 310, 1178), radius=33, fill=(37, 127, 245, 238))
+              draw.text((135, 1130), f"IDEA {index}", font=font(25, True), fill=(255, 255, 255, 255))
+              y = centered(draw, main, font(65, True), 1275, 840, (255, 255, 255, 255), 8) + 32
+              centered(draw, sub, font(38, True), y, 835, (255, 220, 91, 255), 12)
+              image.save(output)
+
+          def cta_overlay(item: dict[str, Any], output: Path) -> None:
+              image, draw = base_overlay(item, "CIERRE")
+              draw.rounded_rectangle((56, 1040, 1024, 1812), radius=52, fill=(2, 7, 14, 230), outline=(59, 166, 255, 140), width=3)
+              draw.text((112, 1112), "LA LECCIÓN", font=font(30, True), fill=(76, 183, 255, 255))
+              centered(draw, item["cta"], font(59, True), 1280, 842, (255, 255, 255, 255), 14)
+              draw.rounded_rectangle((205, 1650, 875, 1738), radius=42, fill=(37, 127, 245, 240))
+              label = "GUARDA · COMENTA · COMPARTE"
+              box = draw.textbbox((0, 0), label, font=font(26, True))
+              draw.text(((W - (box[2] - box[0])) / 2, 1679), label, font=font(26, True), fill=(255, 255, 255, 255))
+              image.save(output)
+
+          def render_segment(
+              source: Path,
+              start: float,
+              seconds: float,
+              overlay: Path,
+              output: Path,
+              original_audio: bool,
+          ) -> None:
+              seconds = max(1.0, seconds)
+              command = [
+                  "ffmpeg", "-y", "-ss", f"{start:.3f}", "-t", f"{seconds:.3f}", "-i", str(source),
+                  "-loop", "1", "-i", str(overlay),
+              ]
+              if not original_audio:
+                  command += ["-f", "lavfi", "-t", f"{seconds:.3f}", "-i", "anoisesrc=color=pink:amplitude=0.010:sample_rate=48000"]
+              video_filter = (
+                  "[0:v]split=2[bg][fg];"
+                  "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=34:1,eq=brightness=-0.23[bg2];"
+                  "[fg]scale=1000:1020:force_original_aspect_ratio=decrease[fg2];"
+                  "[bg2][fg2]overlay=(W-w)/2:150[scene];"
+                  f"[scene][1:v]overlay=0:0,fade=t=in:st=0:d=0.14,fade=t=out:st={max(0.15, seconds - 0.14):.3f}:d=0.14,format=yuv420p,setsar=1[v]"
+              )
+              command += ["-filter_complex", video_filter, "-map", "[v]"]
+              if original_audio:
+                  command += ["-map", "0:a?", "-af", "loudnorm=I=-15:LRA=11:TP=-1.5,aresample=48000"]
+              else:
+                  command += [
+                      "-map", "2:a",
+                      "-af", f"lowpass=f=850,highpass=f=65,volume=0.17,afade=t=in:st=0:d=0.3,afade=t=out:st={max(0.3, seconds - 0.35):.2f}:d=0.35",
+                  ]
+              command += [
+                  "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "19",
+                  "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-shortest", str(output),
+              ]
+              run(command)
+
+          def concat(parts: list[Path], output: Path) -> None:
+              listing = output.with_suffix(".txt")
+              listing.write_text("".join(f"file '{part.resolve().as_posix()}'\n" for part in parts), encoding="utf-8")
+              run(
+                  [
+                      "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
+                      "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
+                      "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2",
+                      "-movflags", "+faststart", str(output),
+                  ]
+              )
+
+          def slugify(text: str) -> str:
+              translated = text.lower().translate(str.maketrans("áéíóúüñ", "aeiouun"))
+              return re.sub(r"[^a-z0-9]+", "-", translated).strip("-")[:90]
+
+          def build_preview(covers: list[Path]) -> None:
+              canvas = Image.new("RGB", (2160, 1920), (8, 12, 20))
+              for index, cover in enumerate(covers):
+                  image = Image.open(cover).convert("RGB")
+                  image.thumbnail((1030, 1830), Image.Resampling.LANCZOS)
+                  x = 25 + (index % 2) * 1080 + (1030 - image.width) // 2
+                  y = 25 + (index // 2) * 960 + (910 - image.height) // 2
+                  canvas.paste(image, (x, y))
+              canvas.save(OUT / "00_PREVIEW_LAOS_Real_Clips_Batch_03.jpg", quality=92)
+
+          def main() -> None:
+              for folder in (SRC, WORK, OUT):
+                  folder.mkdir(parents=True, exist_ok=True)
+              results: list[dict[str, Any]] = []
+              covers: list[Path] = []
+              for item in ITEMS:
+                  print(f"\n=== {item['id']} · {item['title']} ===", flush=True)
+                  workdir = WORK / item["id"]
+                  workdir.mkdir(parents=True, exist_ok=True)
+                  source = SRC / f"{item['id']}.m4v"
+                  download(item["url"], source)
+                  total = duration(source)
+                  transcript = transcribe(source, workdir / "transcript.json")
+                  start, end, matched, score, used_fallback = find_quote(transcript, item["quote_en"], item["fallback"])
+                  end = min(total - 0.1, end)
+
+                  parts: list[Path] = []
+                  overlay = workdir / "00_sound.png"
+                  sound_overlay(item, overlay)
+                  part = workdir / "00_sound.mp4"
+                  render_segment(source, start, end - start, overlay, part, True)
+                  parts.append(part)
+
+                  positions = [0.12, 0.47, 0.76]
+                  for index, (main_text, sub_text) in enumerate(item["cards"], start=1):
+                      seconds = 4.6
+                      position = min(total * positions[index - 1], max(0.0, total - seconds - 0.5))
+                      if start - 1.0 < position < end + 1.0:
+                          position = min(max(0.0, total - seconds - 0.5), end + 2.5)
+                      overlay = workdir / f"{index:02d}_card.png"
+                      card_overlay(item, main_text, sub_text, index, overlay)
+                      part = workdir / f"{index:02d}_card.mp4"
+                      render_segment(source, position, seconds, overlay, part, False)
+                      parts.append(part)
+
+                  overlay = workdir / "04_cta.png"
+                  cta_overlay(item, overlay)
+                  part = workdir / "04_cta.mp4"
+                  cta_start = min(max(0.0, total - 3.7), total * 0.88)
+                  render_segment(source, cta_start, 3.25, overlay, part, False)
+                  parts.append(part)
+
+                  slug = slugify(item["title"])
+                  final = OUT / f"{item['id']}_{slug}.mp4"
+                  concat(parts, final)
+                  cover = OUT / f"{item['id']}_{slug}.jpg"
+                  run(["ffmpeg", "-y", "-ss", "0.75", "-i", str(final), "-frames:v", "1", "-q:v", "2", str(cover)])
+                  covers.append(cover)
+
+                  copy = (
+                      f"{item['title']}\n\n"
+                      f"{item['fact_note']}\n\n"
+                      f"{item['cta']}\n\n"
+                      f"Fuente: {item['page']}\n"
+                      "Crédito: Courtesy NASA/JPL-Caltech\n\n"
+                      "#Ingeniería #IA #Tecnología #LAOS #BuildInPublic #NASA #JPL"
+                  )
+                  (OUT / f"{item['id']}_{slug}.txt").write_text(copy, encoding="utf-8")
+                  results.append(
+                      {
+                          "id": item["id"],
+                          "title": item["title"],
+                          "account": item["account"],
+                          "series": item["series"],
+                          "source_page": item["page"],
+                          "source_media": item["url"],
+                          "source_start": round(start, 3),
+                          "source_end": round(end, 3),
+                          "quote_match_score": round(score, 1),
+                          "quote_match_text": matched,
+                          "used_fallback": used_fallback,
+                          "duration_seconds": round(duration(final), 2),
+                          "output": final.name,
+                          "cover": cover.name,
+                          "credit": "Courtesy NASA/JPL-Caltech",
+                          "rights_note": "Editorial/informational prototype. Retain credit; do not imply NASA/JPL/Caltech endorsement; review identifiable-person use before paid advertising.",
+                      }
+                  )
+
+              build_preview(covers)
+              (OUT / "manifest-batch03.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+              readme = """# LAOS Real Clips · Batch 03\n\nCuatro reels verticales construidos con entrevistas y metraje oficial de NASA/JPL.\n\n## Publicación\n\n- REAL-007: @angeln.py — del diseño al hardware.\n- REAL-008: @laostechnologies — fiabilidad y operaciones.\n- REAL-009: @laostechnologies — calidad, contaminación y evidencia.\n- REAL-010: @angeln.py — reproducción de fallos y sandbox.\n\n## Crédito obligatorio\n\nCourtesy NASA/JPL-Caltech. No sugerir afiliación ni respaldo. Para anuncios pagados, revisar por separado los derechos de imagen de las personas identificables.\n"""
+              (OUT / "README_Batch_03.md").write_text(readme, encoding="utf-8")
+
+          if __name__ == "__main__":
+              main()
+          PY
+
+      - name: Render batch 03
+        run: python render_batch03.py
+
+      - name: Validate technical delivery
+        run: |
+          set -euo pipefail
+          test "$(find output-batch03 -maxdepth 1 -name 'REAL-*.mp4' | wc -l)" -eq 4
+          test "$(find output-batch03 -maxdepth 1 -name 'REAL-*.jpg' | wc -l)" -eq 4
+          test -f output-batch03/00_PREVIEW_LAOS_Real_Clips_Batch_03.jpg
+          test -f output-batch03/manifest-batch03.json
+          for f in output-batch03/REAL-*.mp4; do
+            width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$f")
+            height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$f")
+            sar=$(ffprobe -v error -select_streams v:0 -show_entries stream=sample_aspect_ratio -of csv=p=0 "$f")
+            audio=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "$f")
+            seconds=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
+            echo "$f width=$width height=$height sar=$sar audio=$audio duration=$seconds"
+            test "$width" = "1080"
+            test "$height" = "1920"
+            test "$sar" = "1:1"
+            test -n "$audio"
+            awk -v d="$seconds" 'BEGIN { exit !(d >= 20 && d <= 40) }'
+          done
+          cat > output-batch03/QC_Batch_03.md <<'EOF'
+          # QC · LAOS Real Clips Batch 03
+
+          - 4 vídeos H.264/AAC.
+          - 1080 × 1920, SAR 1:1, 30 fps.
+          - Audio original preservado en el soundbite.
+          - Crédito NASA/JPL-Caltech visible.
+          - Portadas, copys, preview y manifiesto incluidos.
+          - Fuentes y ventanas temporales registradas.
+          - Sin silencios: los bloques editoriales usan ambiente leve.
+
+          Revisión editorial recomendada antes de publicación: comprobar subtítulo traducido, encuadre de la persona y uso orgánico frente a publicidad pagada.
+          EOF
+          cd output-batch03
+          zip -9 -r ../LAOS_Real_Clips_Batch_03_Complete.zip .
+
+      - name: Upload finished batch
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-03
+          path: |
+            output-batch03/**
+            LAOS_Real_Clips_Batch_03_Complete.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
