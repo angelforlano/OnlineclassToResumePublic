@@ -1,0 +1,70 @@
+[
+  {
+    "id": "REAL-009",
+    "account": "@angeln.py",
+    "series": "QA REAL",
+    "title": "EL TEST EXISTE PARA ROMPER TU SUPOSICIÓN",
+    "quote_en": "The reason why we do all this testing is to prove that what we think is going to happen actually will happen when Curiosity gets to Mars and that we really understand the dynamics of these vehicles.",
+    "quote_es": "Probamos para demostrar que lo que creemos que ocurrirá realmente ocurrirá.",
+    "analysis_voice": "Compilar no demuestra que un producto funcione. Una prueba útil intenta romper la suposición: registro, datos reales, error, recuperación y vuelta al día siguiente. El objetivo no es pasar el test. Es entender el sistema.",
+    "cards": [
+      "HIPÓTESIS",
+      "PRUEBA DEL SISTEMA COMPLETO",
+      "EVIDENCIA"
+    ],
+    "cta": "No declares terminado lo que no has intentado romper.",
+    "source_page": "https://www.jpl.nasa.gov/videos/landing-system-drop-test/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20110119curiosity20110119-1280.m4v"
+  },
+  {
+    "id": "REAL-010",
+    "account": "@laostechnologies",
+    "series": "AUTONOMY CUT",
+    "title": "CALCULÓ UNA NUEVA RUTA EN UN SEGUNDO",
+    "quote_en": "The G-FOLD computer calculated this new trajectory in mid-air in real time, choosing a new landing site in the distance and optimizing the path through the sky to burn the least amount of fuel possible.",
+    "quote_es": "Calculó una nueva trayectoria en pleno vuelo y optimizó el combustible.",
+    "analysis_voice": "La autonomía útil no improvisa sin límites. Recibe un nuevo objetivo, recalcula dentro de restricciones físicas y elige una ruta que sigue siendo segura. Decidir rápido solo sirve cuando la decisión respeta el sistema.",
+    "cards": [
+      "NUEVO OBJETIVO",
+      "RECALCULAR BAJO RESTRICCIONES",
+      "ATERRIZAR DE FORMA SEGURA"
+    ],
+    "cta": "Velocidad con restricciones: eso sí es autonomía.",
+    "source_page": "https://www.jpl.nasa.gov/videos/g-fold-diversion-test/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20140122G-FOLD20140115-1280.m4v"
+  },
+  {
+    "id": "REAL-011",
+    "account": "@angeln.py",
+    "series": "ENGINEERING FIX",
+    "title": "NO CAMBIARON HUBBLE. LE PUSIERON GAFAS",
+    "quote_en": "If you're born with eyeballs that don't quite work, you don't go and buy new eyeballs, you get a pair of glasses. And that's the approach that we took.",
+    "quote_es": "No compras ojos nuevos: te pones gafas. Ese fue el enfoque.",
+    "analysis_voice": "Este es el antídoto contra la reescritura impulsiva. Primero localiza dónde aparece el error. Después corrígelo en el punto que puede compensarlo y conserva todo lo demás. Una interfaz bien elegida puede salvar un sistema entero.",
+    "cards": [
+      "LOCALIZA EL ERROR REAL",
+      "CORRIGE EN LA FRONTERA ADECUADA",
+      "CONSERVA LO QUE YA FUNCIONA"
+    ],
+    "cta": "No reescribas el sistema si unas buenas gafas lo arreglan.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-the-camera-that-fixed-hubble/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videoswfpc20150423JPL-20150422-mCrazEng-0000-Ep3_WFPC2-A-1280.m4v"
+  },
+  {
+    "id": "REAL-012",
+    "account": "@laostechnologies",
+    "series": "DEEP TECH",
+    "title": "ACELERACIÓN CON PACIENCIA",
+    "quote_en": "Instead of thrusting for four days, if we thrust for a week or a year or as Dawn already has, for almost five years, you can build up fantastically high velocity. It's what I like to call acceleration with patience.",
+    "quote_es": "Con empuje continuo durante años puedes acumular una velocidad enorme.",
+    "analysis_voice": "No toda tecnología gana por fuerza bruta. El motor iónico empuja muy poco, pero lo hace durante muchísimo tiempo. En sistemas complejos, una mejora pequeña, estable y acumulativa puede superar a una explosión de esfuerzo que no se sostiene.",
+    "cards": [
+      "POCO EMPUJE",
+      "MUCHO TIEMPO",
+      "UNA VELOCIDAD ENORME"
+    ],
+    "cta": "La consistencia también es una tecnología.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-ion-propulsion-for-the-dawn-mission/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosdawn2014122920141229-1280.m4v"
+  }
+]
