@@ -33,15 +33,17 @@ jobs:
           script = Path("social/real-clips/render.py")
           text = script.read_text(encoding="utf-8")
           needle = '    start, end, matched, score = find_quote(segments, item["quote_en"])\n'
-          replacement = '''    if "manual_start" in item and "manual_end" in item:
-              start = float(item["manual_start"])
-              end = float(item["manual_end"])
-              matched = item["quote_en"]
-              score = 100.0
-              print(f"Using verified manual soundbite @ {start:.2f}-{end:.2f}")
-          else:
-              start, end, matched, score = find_quote(segments, item["quote_en"])
-          '''
+          replacement = "\n".join([
+              '    if "manual_start" in item and "manual_end" in item:',
+              '        start = float(item["manual_start"])',
+              '        end = float(item["manual_end"])',
+              '        matched = item["quote_en"]',
+              '        score = 100.0',
+              '        print(f"Using verified manual soundbite @ {start:.2f}-{end:.2f}")',
+              '    else:',
+              '        start, end, matched, score = find_quote(segments, item["quote_en"])',
+              '',
+          ])
           if needle not in text:
               raise SystemExit("Expected renderer insertion point not found")
           script.write_text(text.replace(needle, replacement), encoding="utf-8")
