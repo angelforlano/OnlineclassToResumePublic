@@ -1,4 +1,4 @@
-name: Render LAOS real interview clips batch 04 fast
+name: Render LAOS real interview clips batch 04 bundled
 
 on:
   push:
@@ -30,15 +30,42 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Verify bundled media tools
+      - name: Install self-contained renderer dependencies
         run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper edge-tts imageio-ffmpeg
+          python - <<'PY'
+          import imageio_ffmpeg
+          from pathlib import Path
+          exe = Path(imageio_ffmpeg.get_ffmpeg_exe())
+          print(exe)
+          target = Path('/usr/local/bin/ffmpeg')
+          target.unlink(missing_ok=True)
+          target.symlink_to(exe)
+          PY
           ffmpeg -version | head -1
           fc-match DejaVuSans.ttf
 
-      - name: Install Python renderer dependencies
+      - name: Patch duration probing to use PyAV
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install requests pillow rapidfuzz faster-whisper edge-tts
+          python - <<'PY'
+          from pathlib import Path
+          script = Path('social/real-clips/render.py')
+          text = script.read_text(encoding='utf-8')
+          start = text.index('def ffprobe_duration(path: Path) -> float:\n')
+          end = text.index('\n\ndef transcribe(', start)
+          replacement = '''def ffprobe_duration(path: Path) -> float:
+              import av
+              with av.open(str(path)) as container:
+                  if container.duration is not None:
+                      return float(container.duration / av.time_base)
+                  stream = next((s for s in container.streams if s.type == "video"), None)
+                  if stream is None or stream.duration is None:
+                      raise RuntimeError(f"Could not determine duration for {path}")
+                  return float(stream.duration * stream.time_base)
+          '''
+          script.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
+          PY
 
       - name: Render four real-source vertical clips
         working-directory: social/real-clips
@@ -47,12 +74,20 @@ jobs:
       - name: Verify outputs
         working-directory: social/real-clips
         run: |
-          test "$(find output -maxdepth 1 -name '*.mp4' | wc -l)" -eq 4
-          for f in output/*.mp4; do
-            ffprobe -v error -select_streams v:0 \
-              -show_entries stream=codec_name,width,height \
-              -of default=noprint_wrappers=1 "$f"
-          done
+          python - <<'PY'
+          import av
+          from pathlib import Path
+          files = sorted(Path('output').glob('*.mp4'))
+          assert len(files) == 4, files
+          for path in files:
+              with av.open(str(path)) as container:
+                  video = next(s for s in container.streams if s.type == 'video')
+                  audio = next(s for s in container.streams if s.type == 'audio')
+                  assert video.codec_context.name == 'h264'
+                  assert (video.width, video.height) == (1080, 1920)
+                  assert audio.codec_context.name == 'aac'
+                  print(path.name, video.width, video.height, video.codec_context.name, audio.codec_context.name)
+          PY
 
       - name: Upload finished MP4s
         uses: actions/upload-artifact@v4
