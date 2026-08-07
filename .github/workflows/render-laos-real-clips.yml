@@ -24,6 +24,47 @@ jobs:
         with:
           ref: automation/laos-real-clips-20260807
 
+      - name: Patch verified first-person soundbite
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          script = Path("social/real-clips/render.py")
+          text = script.read_text(encoding="utf-8")
+          needle = '    start, end, matched, score = find_quote(segments, item["quote_en"])\n'
+          replacement = '''    if "manual_start" in item and "manual_end" in item:
+              start = float(item["manual_start"])
+              end = float(item["manual_end"])
+              matched = item["quote_en"]
+              score = 100.0
+              print(f"Using verified manual soundbite @ {start:.2f}-{end:.2f}")
+          else:
+              start, end, matched, score = find_quote(segments, item["quote_en"])
+          '''
+          if needle not in text:
+              raise SystemExit("Expected renderer insertion point not found")
+          script.write_text(text.replace(needle, replacement), encoding="utf-8")
+
+          manifest_path = Path("social/real-clips/manifest.json")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest[0].update({
+              "title": "LA AUTONOMÍA EMPIEZA EN LA PERCEPCIÓN",
+              "quote_en": "A wide field camera on the front here and then also on the bottom here there's a second wide field of view camera",
+              "quote_es": "Una cámara de gran campo delante… y otra debajo.",
+              "analysis_voice": "La autonomía no empieza en el modelo. Empieza en percibir bien el entorno. Dos cámaras, un mapa previo y una estimación constante de posición convierten una máquina rápida en una máquina capaz de orientarse.",
+              "cards": [
+                  "PRIMERO PERCIBIR",
+                  "DESPUÉS LOCALIZARSE",
+                  "Y SOLO ENTONCES DECIDIR"
+              ],
+              "cta": "La IA útil empieza antes del algoritmo.",
+              "manual_start": 12.1,
+              "manual_end": 19.4
+          })
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+          PY
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
