@@ -1,4 +1,4 @@
-name: Render LAOS real interview clips batch 03
+name: Render LAOS real interview clips batch 04
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
 
       - name: Render four real-source vertical clips
         working-directory: social/real-clips
-        run: python render.py --manifest manifest_batch_03.json --model tiny.en
+        run: python render.py --manifest manifest_batch_04.json --model tiny.en
 
       - name: Verify outputs
         working-directory: social/real-clips
@@ -53,7 +53,7 @@ jobs:
       - name: Upload finished MP4s
         uses: actions/upload-artifact@v4
         with:
-          name: LAOS-real-clips-batch-03
+          name: LAOS-real-clips-batch-04
           path: |
             social/real-clips/output/*.mp4
             social/real-clips/output/*.jpg
