@@ -1,0 +1,62 @@
+name: Render LAOS real interview clips
+
+on:
+  push:
+    branches:
+      - automation/laos-real-clips-20260807
+    paths:
+      - "social/real-clips/**"
+      - ".github/workflows/render-laos-real-clips.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper edge-tts
+
+      - name: Render four real-source vertical clips
+        working-directory: social/real-clips
+        run: python render.py --manifest manifest.json --model tiny.en
+
+      - name: Verify outputs
+        working-directory: social/real-clips
+        run: |
+          test "$(find output -maxdepth 1 -name '*.mp4' | wc -l)" -eq 4
+          for f in output/*.mp4; do
+            ffprobe -v error -select_streams v:0 \
+              -show_entries stream=codec_name,width,height \
+              -of default=noprint_wrappers=1 "$f"
+          done
+
+      - name: Upload finished MP4s
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-01
+          path: |
+            social/real-clips/output/*.mp4
+            social/real-clips/output/*.jpg
+            social/real-clips/output/*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
