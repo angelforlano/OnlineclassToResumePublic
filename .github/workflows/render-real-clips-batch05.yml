@@ -1,0 +1,76 @@
+name: Render LAOS real-source shorts batch 05
+
+on:
+  push:
+    branches:
+      - automation/laos-real-clips-20260807
+    paths:
+      - "social/real-clips/manifest_batch_05.json"
+      - ".github/workflows/render-real-clips-batch05.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper edge-tts
+
+      - name: Patch renderer for source-specific attribution
+        working-directory: social/real-clips
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('render.py')
+          s=p.read_text()
+          old='d.text((52, H-60), "Courtesy NASA/JPL-Caltech · análisis editorial · sin afiliación", font=font(18), fill=(235,240,248,220))'
+          new='d.text((52, H-60), item.get("credit", "Fuente acreditada · análisis editorial LAOS"), font=font(18), fill=(235,240,248,220))'
+          if old not in s:
+              raise SystemExit('renderer attribution line not found')
+          p.write_text(s.replace(old,new))
+          PY
+
+      - name: Render Batch 05
+        working-directory: social/real-clips
+        run: python render.py --manifest manifest_batch_05.json --model tiny.en
+
+      - name: Validate technical delivery
+        working-directory: social/real-clips
+        run: |
+          test "$(find output -maxdepth 1 -name '*.mp4' | wc -l)" -eq 4
+          for f in output/*.mp4; do
+            ffprobe -v error -select_streams v:0 \
+              -show_entries stream=codec_name,width,height,sample_aspect_ratio \
+              -of default=noprint_wrappers=1 "$f"
+          done
+
+      - name: Upload Batch 05
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-05
+          path: |
+            social/real-clips/output/*.mp4
+            social/real-clips/output/*.jpg
+            social/real-clips/output/*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
