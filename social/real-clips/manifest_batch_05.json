@@ -1,0 +1,78 @@
+[
+  {
+    "id": "REAL-015",
+    "account": "@angeln.py",
+    "series": "AGENTES SIN HUMO",
+    "title": "UN AGENTE NO DEBE DECIDIR EN QUIÉN CONFÍA",
+    "quote_en": "inadequate sandboxing of tools",
+    "quote_es": "El problema no es solo el modelo: también es qué herramientas puede tocar y qué límites tiene.",
+    "analysis_voice": "Los agentes de IA amplifican cualquier error de confianza. Si pueden leer archivos, ejecutar comandos o navegar sin aislamiento suficiente, una instrucción maliciosa deja de ser texto y se convierte en una acción. La autonomía útil necesita permisos mínimos, sandboxing y trazabilidad.",
+    "cards": [
+      "AUTONOMÍA SIN LÍMITES = SUPERFICIE DE ATAQUE",
+      "PERMISOS MÍNIMOS ANTES QUE PROMPTS MÁGICOS",
+      "TODO AGENTE NECESITA TRAZABILIDAD"
+    ],
+    "cta": "Un agente serio no recibe confianza. La demuestra dentro de límites.",
+    "source_page": "https://media.ccc.de/v/39c3-agentic-probllms-exploiting-ai-computer-use-and-coding-agents",
+    "media_url": "https://cdn.media.ccc.de/congress/2025/h264-sd/39c3-1306-eng-deu-fra-Agentic_ProbLLMs_Exploiting_AI_Computer-Use_and_Coding_Agents_sd.mp4",
+    "license": "CC BY 4.0",
+    "credit": "Johann Rehberger · 39C3 / media.ccc.de · CC BY 4.0 · editado por LAOS"
+  },
+  {
+    "id": "REAL-016",
+    "account": "@laostechnologies",
+    "series": "ROBOTICS BREAKDOWN",
+    "title": "LOS SENSORES SON EL SISTEMA NERVIOSO DEL ROBOT",
+    "quote_en": "nervous system for robots",
+    "quote_es": "Los sensores MEMS están convirtiéndose en el sistema nervioso de los robots.",
+    "analysis_voice": "Un robot no empieza por la inteligencia. Empieza por percibir. Una IMU diminuta puede medir movimiento, orientación y aceleración miles de veces por segundo. Sin una capa sensorial fiable, el mejor modelo de IA está tomando decisiones sobre un mundo que apenas puede sentir.",
+    "cards": [
+      "PRIMERO PERCIBIR",
+      "DESPUÉS ESTIMAR EL ESTADO",
+      "AL FINAL DECIDIR Y ACTUAR"
+    ],
+    "cta": "La inteligencia física empieza en los sensores, no en el chatbot.",
+    "source_page": "https://media.ccc.de/v/emf2026-131-1-sensing-our-world-from-your-badge-to-the-future-of-robotics",
+    "media_url": "https://cdn.media.ccc.de/events/emf/2026/h264-sd/emf2026-13101-eng-Sensing_Our_World_From_Your_Badge_to_the_Future_of_Robotics_sd.mp4",
+    "license": "CC BY-SA 4.0",
+    "credit": "Harald Koenig · EMF 2026 / media.ccc.de · CC BY-SA 4.0 · adaptación LAOS"
+  },
+  {
+    "id": "REAL-017",
+    "account": "@laostechnologies",
+    "series": "BIOENGINEERING",
+    "title": "ROBOTS VIVOS DISEÑADOS POR ORDENADOR",
+    "quote_en": "computer designed organisms",
+    "quote_es": "Organismos diseñados por ordenador y construidos con células vivas.",
+    "analysis_voice": "Los Xenobots rompen una frontera cómoda: software, biología y robótica dejan de ser disciplinas separadas. El ordenador busca una geometría, las células la materializan y el comportamiento aparece en el mundo físico. Diseñar sistemas futuros exigirá pensar entre disciplinas, no dentro de cajas.",
+    "cards": [
+      "EL DISEÑO PUEDE SER COMPUTACIONAL",
+      "EL MATERIAL PUEDE ESTAR VIVO",
+      "LA FRONTERA ENTRE SOFTWARE Y MÁQUINA SE MUEVE"
+    ],
+    "cta": "La próxima plataforma quizá no esté hecha solo de silicio.",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Xenobots_-_Building_the_First-Ever_Self-Replicating_Living_Robots.webm",
+    "media_url": "https://upload.wikimedia.org/wikipedia/commons/3/33/Xenobots_-_Building_the_First-Ever_Self-Replicating_Living_Robots.webm",
+    "license": "CC BY 3.0",
+    "credit": "University of Vermont · CC BY 3.0 · vía Wikimedia Commons · adaptación LAOS"
+  },
+  {
+    "id": "REAL-018",
+    "account": "@angeln.py",
+    "series": "IA SIN MARKETING",
+    "title": "UN ROBOT APRENDE, PERO NO COMO EN LAS PELÍCULAS",
+    "quote_en": "robots can learn",
+    "quote_es": "Los robots pueden aprender, pero aprender no significa comprenderlo todo.",
+    "analysis_voice": "Decir que una máquina aprende no significa que adquiera una inteligencia general. En robótica, aprender suele significar ajustar una política, estimar mejor un estado o mejorar una tarea bajo condiciones concretas. La palabra es pequeña; el detalle técnico es enorme.",
+    "cards": [
+      "APRENDER NO ES ENTENDER TODO",
+      "UNA TAREA NO ES INTELIGENCIA GENERAL",
+      "MIDE LA CAPACIDAD REAL, NO LA ETIQUETA"
+    ],
+    "cta": "Cuanto más precisa es la definición, menos magia necesita la IA.",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Will_robots_outsmart_us.webm",
+    "media_url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Will_robots_outsmart_us.webm",
+    "license": "CC BY-SA 4.0",
+    "credit": "University of the Netherlands · CC BY-SA 4.0 · vía Wikimedia Commons · adaptación LAOS"
+  }
+]
