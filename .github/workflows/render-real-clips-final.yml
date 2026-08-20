@@ -1,0 +1,214 @@
+name: Render final LAOS real-source shorts
+
+on:
+  push:
+    branches: [automation/real-clips-20260807]
+    paths: [.github/workflows/render-real-clips-final.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow
+      - name: Create final renderer
+        run: |
+          cat > render_final.py <<'PY'
+          from __future__ import annotations
+          import json, re, subprocess
+          from pathlib import Path
+          from typing import Any
+          import requests
+          from PIL import Image, ImageDraw, ImageFont
+
+          ROOT=Path(__file__).resolve().parent
+          SRC=ROOT/'sources-final'; OUT=ROOT/'output-final'; WORK=ROOT/'work-final'
+          W,H=1080,1920
+          BOLD='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+          REG='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+
+          ITEMS=[
+            {
+              'id':'REAL-001','account':'@angeln.py','series':'IA SIN HUMO',
+              'title':'LA IA PERDIÓ LA CARRERA',
+              'start':12.45,'end':18.35,
+              'quote_es':'Una cámara gran angular delante y otra debajo.',
+              'cards':[
+                ('HUMANO','11,1 segundos por vuelta'),
+                ('IA','13,9 segundos por vuelta'),
+                ('MÁS LENTA','pero completó el circuito con precisión')],
+              'cta':'No midas solo velocidad. Mide consistencia.',
+              'page':'https://www.jpl.nasa.gov/videos/drone-race-human-versus-ai/',
+              'url':'https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20171121JPL-20171102-TECHp-0001-720cc.m4v',
+              'fact_note':'JPL informa 11,1 s/vuelta para el piloto humano y 13,9 s/vuelta para la IA; la IA completó el recorrido con precisión.'
+            },
+            {
+              'id':'REAL-002','account':'@laostechnologies','series':'ROBOTLAB CUT',
+              'title':'LAS RUEDAS SON MEJORES… HASTA QUE NO',
+              'start':61.55,'end':69.78,
+              'quote_es':'Las ruedas son lo más eficiente… hasta que el terreno obliga a cambiar.',
+              'cards':[
+                ('EFICIENCIA','no significa universalidad'),
+                ('EL TERRENO','dicta la morfología'),
+                ('ROBOTLAB','misión primero · robot después')],
+              'cta':'Diseña para el problema, no para la foto.',
+              'page':'https://www.jpl.nasa.gov/videos/crazy-engineering-robosimian-robot/',
+              'url':'https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20150603JPL-20150602-mTech-0000-CrazyEngineering_RoboSimian-A-1280.m4v',
+              'fact_note':'Brett Kennedy explica que las ruedas son el modo más eficiente, pero el terreno demasiado abrupto exige otro método.'
+            },
+            {
+              'id':'REAL-003','account':'@angeln.py','series':'ERROR CARO',
+              'title':'NASA FALLÓ VARIAS VECES',
+              'start':85.78,'end':97.18,
+              'quote_es':'Es un problema muy difícil. A veces parece intratable, pero somos ingenieros: nos encantan los retos.',
+              'cards':[
+                ('FALLAR','no es repetir a ciegas'),
+                ('LOGS','hipótesis → prueba'),
+                ('EN LAOS','1.518 reinicios eran la pista')],
+              'cta':'El error sirve cuando cambia tu siguiente intento.',
+              'page':'https://www.jpl.nasa.gov/videos/nasa-insights-robotic-arm-helps-out-its-mole-on-mars/',
+              'url':'https://d2pn8kiwq2w21t.cloudfront.net/media/videosinsight20191003JPL-20191003-INSIGHf-0001-720cc.m4v',
+              'fact_note':'El equipo de InSight describe un problema muy difícil que a veces parece intratable, y explica que los ingenieros disfrutan resolviendo retos.'
+            }
+          ]
+
+          def run(cmd:list[str],capture=False,timeout=900):
+            print('+',' '.join(cmd),flush=True)
+            return subprocess.run(cmd,check=True,text=True,stdout=subprocess.PIPE if capture else None,stderr=subprocess.PIPE if capture else None,timeout=timeout)
+
+          def dur(p:Path)->float:
+            r=run(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(p)],capture=True)
+            return float(r.stdout.strip())
+
+          def download(url:str,p:Path):
+            if p.exists() and p.stat().st_size>1_000_000:return
+            with requests.get(url,stream=True,timeout=120,headers={'User-Agent':'Mozilla/5.0 LAOS editorial renderer'}) as r:
+              r.raise_for_status()
+              with p.open('wb') as f:
+                for chunk in r.iter_content(1024*1024):
+                  if chunk:f.write(chunk)
+            if p.stat().st_size<1_000_000:raise RuntimeError(f'bad source {p}')
+
+          def font(n:int,bold=False):return ImageFont.truetype(BOLD if bold else REG,n)
+
+          def wrap(d,text,f,maxw):
+            lines=[];cur=''
+            for word in text.split():
+              t=word if not cur else cur+' '+word
+              if d.textbbox((0,0),t,font=f)[2]<=maxw:cur=t
+              else:
+                if cur:lines.append(cur)
+                cur=word
+            if cur:lines.append(cur)
+            return lines
+
+          def center(d,text,f,y,maxw,fill,spacing=12):
+            for line in wrap(d,text,f,maxw):
+              bb=d.textbbox((0,0),line,font=f)
+              d.text(((W-(bb[2]-bb[0]))/2,y),line,font=f,fill=fill,stroke_width=2,stroke_fill=(0,0,0,170))
+              y+=bb[3]-bb[1]+spacing
+            return y
+
+          def base_overlay(item,label):
+            im=Image.new('RGBA',(W,H),(0,0,0,0));d=ImageDraw.Draw(im,'RGBA')
+            d.rounded_rectangle((38,38,525,106),radius=32,fill=(3,8,17,224),outline=(59,163,255,170),width=2)
+            d.text((66,59),f"{item['account']} · {item['series']}",font=font(25,True),fill=(250,252,255,255))
+            d.rounded_rectangle((820,40,1040,104),radius=30,fill=(36,126,245,235))
+            bb=d.textbbox((0,0),label,font=font(22,True));d.text((930-(bb[2]-bb[0])/2,61),label,font=font(22,True),fill=(255,255,255,255))
+            d.text((48,H-50),'Courtesy NASA/JPL-Caltech · análisis editorial LAOS · sin afiliación',font=font(18),fill=(235,241,250,225))
+            return im,d
+
+          def sound_overlay(item,p):
+            im,d=base_overlay(item,'CLIP REAL')
+            d.rounded_rectangle((50,1100,1030,1818),radius=44,fill=(2,7,14,212),outline=(255,255,255,38),width=2)
+            y=center(d,item['title'],font(65,True),1160,870,(255,255,255,255),8)+30
+            center(d,item['quote_es'],font(38,True),y,850,(255,220,91,255),12)
+            im.save(p)
+
+          def card_overlay(item,main,sub,index,p):
+            im,d=base_overlay(item,f'{index}/3')
+            d.rounded_rectangle((58,1070,1022,1805),radius=48,fill=(2,7,14,222),outline=(58,164,255,125),width=3)
+            d.rounded_rectangle((104,1124,310,1190),radius=32,fill=(36,126,245,235))
+            d.text((137,1143),f'IDEA {index}',font=font(25,True),fill=(255,255,255,255))
+            y=center(d,main,font(78,True),1300,820,(255,255,255,255),8)+34
+            center(d,sub,font(40,True),y,820,(255,220,91,255),12)
+            im.save(p)
+
+          def cta_overlay(item,p):
+            im,d=base_overlay(item,'CIERRE')
+            d.rounded_rectangle((58,1050,1022,1810),radius=50,fill=(2,7,14,228),outline=(58,164,255,135),width=3)
+            d.text((115,1120),'LA LECCIÓN',font=font(30,True),fill=(75,181,255,255))
+            center(d,item['cta'],font(64,True),1290,830,(255,255,255,255),14)
+            d.rounded_rectangle((210,1650,870,1735),radius=40,fill=(36,126,245,238))
+            text='GUARDA · COMENTA · COMPARTE';bb=d.textbbox((0,0),text,font=font(26,True))
+            d.text(((W-(bb[2]-bb[0]))/2,1678),text,font=font(26,True),fill=(255,255,255,255))
+            im.save(p)
+
+          def render(source,start,seconds,png,out,original_audio):
+            cmd=['ffmpeg','-y','-ss',f'{start:.3f}','-t',f'{seconds:.3f}','-i',str(source),'-loop','1','-i',str(png)]
+            if not original_audio:cmd+=['-f','lavfi','-t',f'{seconds:.3f}','-i','anoisesrc=color=pink:amplitude=0.012:sample_rate=48000']
+            vf=("[0:v]split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=34:1,eq=brightness=-0.22[bg2];"
+                "[fg]scale=1000:1020:force_original_aspect_ratio=decrease[fg2];[bg2][fg2]overlay=(W-w)/2:170[scene];"
+                "[scene][1:v]overlay=0:0,fade=t=in:st=0:d=0.12,fade=t=out:st=%0.3f:d=0.12,format=yuv420p[v]"%max(0.15,seconds-0.12))
+            cmd+=['-filter_complex',vf,'-map','[v]']
+            if original_audio:cmd+=['-map','0:a?','-af','loudnorm=I=-15:LRA=11:TP=-1.5,aresample=48000']
+            else:cmd+=['-map','2:a','-af',f'lowpass=f=900,highpass=f=60,volume=0.18,afade=t=in:st=0:d=0.3,afade=t=out:st={max(.3,seconds-.35):.2f}:d=.35']
+            cmd+=['-r','30','-c:v','libx264','-preset','veryfast','-crf','19','-c:a','aac','-b:a','160k','-ar','48000','-ac','2','-shortest',str(out)]
+            run(cmd)
+
+          def concat(parts,out):
+            listing=out.with_suffix('.txt');listing.write_text(''.join(f"file '{p.resolve().as_posix()}'\n" for p in parts),encoding='utf-8')
+            run(['ffmpeg','-y','-f','concat','-safe','0','-i',str(listing),'-c:v','libx264','-preset','veryfast','-crf','19','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-ar','48000','-ac','2','-movflags','+faststart',str(out)])
+
+          def main():
+            for p in(SRC,OUT,WORK):p.mkdir(parents=True,exist_ok=True)
+            results=[]
+            for item in ITEMS:
+              wd=WORK/item['id'];wd.mkdir(parents=True,exist_ok=True)
+              source=SRC/f"{item['id']}.m4v";download(item['url'],source);total=dur(source)
+              parts=[]
+              png=wd/'00_sound.png';sound_overlay(item,png);part=wd/'00_sound.mp4';render(source,item['start'],item['end']-item['start'],png,part,True);parts.append(part)
+              positions=[.12,.46,.74]
+              for i,(main_text,sub_text) in enumerate(item['cards'],1):
+                sec=4.65;start=min(max(0,total*positions[i-1]),max(0,total-sec-.5))
+                if item['start']-1<start<item['end']+1:start=min(max(0,total-sec-.5),item['end']+3)
+                png=wd/f'{i:02d}_card.png';card_overlay(item,main_text,sub_text,i,png);part=wd/f'{i:02d}_card.mp4';render(source,start,sec,png,part,False);parts.append(part)
+              png=wd/'04_cta.png';cta_overlay(item,png);part=wd/'04_cta.mp4';render(source,min(max(0,total-3.5),total*.88),3.2,png,part,False);parts.append(part)
+              slug=re.sub(r'[^a-z0-9]+','-',item['title'].lower().translate(str.maketrans('áéíóúüñ','aeiouun'))).strip('-')
+              final=OUT/f"{item['id']}_{slug}.mp4";concat(parts,final)
+              cover=OUT/f"{item['id']}_{slug}.jpg";run(['ffmpeg','-y','-ss','.7','-i',str(final),'-frames:v','1','-q:v','2',str(cover)])
+              copy=(f"{item['title']}\n\n{item['fact_note']}\n\n{item['cta']}\n\nFuente: {item['page']}\nCrédito: Courtesy NASA/JPL-Caltech\n\n#IA #Tecnología #Ingeniería #LAOS #BuildInPublic")
+              (OUT/f"{item['id']}_{slug}.txt").write_text(copy,encoding='utf-8')
+              results.append({'id':item['id'],'title':item['title'],'account':item['account'],'series':item['series'],'source_page':item['page'],'source_media':item['url'],'source_start':item['start'],'source_end':item['end'],'duration_seconds':round(dur(final),2),'output':final.name,'cover':cover.name,'credit':'Courtesy NASA/JPL-Caltech','rights_note':'Editorial/informational prototype. Retain credit; do not imply endorsement; review identifiable-person use before paid advertising.'})
+            (OUT/'manifest.json').write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding='utf-8')
+          if __name__=='__main__':main()
+          PY
+      - name: Render corrected batch
+        run: python render_final.py
+      - name: Validate
+        run: |
+          test "$(find output-final -maxdepth 1 -name '*.mp4' | wc -l)" -eq 3
+          for f in output-final/*.mp4; do
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -of default=nw=1 "$f"
+            ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -of default=nw=1 "$f"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-final-batch-01
+          path: output-final/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

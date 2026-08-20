@@ -1,0 +1,58 @@
+name: Re-render final LAOS real-source shorts v2
+
+on:
+  push:
+    branches: [automation/real-clips-20260807]
+    paths: [.github/workflows/rerender-real-clips-final-v2.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install requests pillow
+      - name: Recover and patch renderer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          src = Path('.github/workflows/render-real-clips-final.yml').read_text(encoding='utf-8')
+          marker = "          cat > render_final.py <<'PY'\n"
+          start = src.index(marker) + len(marker)
+          end = src.index("\n          PY\n", start)
+          block = src[start:end]
+          lines = [line[10:] if line.startswith('          ') else line for line in block.splitlines()]
+          script = '\n'.join(lines) + '\n'
+          script = script.replace("d=.35", "d=0.35")
+          script = script.replace("'-ss','.7'", "'-ss','0.7'")
+          script = script.replace("format=yuv420p[v]", "format=yuv420p,setsar=1[v]")
+          Path('render_final.py').write_text(script, encoding='utf-8')
+          PY
+          python -m py_compile render_final.py
+      - name: Render corrected batch
+        run: python render_final.py
+      - name: Validate
+        run: |
+          test "$(find output-final -maxdepth 1 -name '*.mp4' | wc -l)" -eq 3
+          for f in output-final/*.mp4; do
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,sample_aspect_ratio,display_aspect_ratio,r_frame_rate -of default=nw=1 "$f"
+            ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -of default=nw=1 "$f"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-final-batch-01
+          path: output-final/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

@@ -1,0 +1,65 @@
+name: Resolve REAL-001 soundbite timing
+
+on:
+  push:
+    branches: [automation/real-clips-20260807]
+    paths: [.github/workflows/transcribe-real001-base.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install requests faster-whisper
+      - name: Transcribe without VAD
+        run: |
+          cat > resolve.py <<'PY'
+          import json
+          from pathlib import Path
+          import requests
+          from faster_whisper import WhisperModel
+
+          url = "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20171121JPL-20171102-TECHp-0001-720cc.m4v"
+          source = Path("real001.m4v")
+          with requests.get(url, stream=True, timeout=120, headers={"User-Agent":"Mozilla/5.0"}) as r:
+              r.raise_for_status()
+              with source.open("wb") as f:
+                  for chunk in r.iter_content(1024 * 1024):
+                      if chunk:
+                          f.write(chunk)
+          model = WhisperModel("base.en", device="cpu", compute_type="int8")
+          prompt = "NASA JPL drone race human versus artificial intelligence. Ken Loo. The AI-piloted drone averaged 13.9 seconds per lap. Loo's drone averaged 11.1 seconds. Although slower, the AI-piloted drone completed the course with accuracy."
+          segments, info = model.transcribe(
+              str(source), language="en", beam_size=5, vad_filter=False,
+              condition_on_previous_text=True, word_timestamps=True,
+              initial_prompt=prompt,
+          )
+          rows = []
+          for s in segments:
+              rows.append({
+                  "start": round(float(s.start),3),
+                  "end": round(float(s.end),3),
+                  "text": s.text.strip(),
+                  "words": [{"start": round(float(w.start or s.start),3), "end": round(float(w.end or s.end),3), "word": w.word} for w in (s.words or [])],
+              })
+          Path("REAL-001_base_transcript.json").write_text(json.dumps({"language":info.language,"segments":rows}, ensure_ascii=False, indent=2), encoding="utf-8")
+          PY
+          python resolve.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: REAL-001-base-transcript
+          path: REAL-001_base_transcript.json
+          retention-days: 7
