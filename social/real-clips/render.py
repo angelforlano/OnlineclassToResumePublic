@@ -32,6 +32,22 @@ FONT_REGULAR_CANDIDATES = [
 FONT_BOLD = next(Path(p) for p in FONT_BOLD_CANDIDATES if Path(p).exists())
 FONT_REGULAR = next(Path(p) for p in FONT_REGULAR_CANDIDATES if Path(p).exists())
 
+REQUIRED_RIGHTS_FIELDS = ("source_page", "media_url", "license", "credit", "rights_status")
+
+
+def validate_rights(item: dict[str, Any]) -> None:
+    """Fail closed until the source and reuse terms have been human-approved."""
+    missing = [field for field in REQUIRED_RIGHTS_FIELDS if not str(item.get(field, "")).strip()]
+    if missing:
+        raise RuntimeError(f"{item.get('id', '<unknown>')}: missing rights metadata: {', '.join(missing)}")
+    if item["rights_status"] != "approved":
+        raise RuntimeError(
+            f"{item.get('id', '<unknown>')}: rights_status must be 'approved' before rendering"
+        )
+    for field in ("source_page", "media_url"):
+        if not str(item[field]).startswith("https://"):
+            raise RuntimeError(f"{item.get('id', '<unknown>')}: {field} must use HTTPS")
+
 
 def run(cmd: list[str], timeout: int = 900, capture: bool = False) -> subprocess.CompletedProcess[str]:
     print("+", " ".join(cmd), flush=True)
@@ -160,7 +176,7 @@ def overlay_base(item: dict[str, Any], progress_label: str) -> tuple[Image.Image
     d.rounded_rectangle((832, 45, 1035, 103), radius=28, fill=(30, 110, 235, 225))
     b = d.textbbox((0, 0), progress_label, font=font(22, True))
     d.text((934 - (b[2]-b[0])/2, 64), progress_label, font=font(22, True), fill=(255,255,255,255))
-    d.text((52, H-60), "Courtesy NASA/JPL-Caltech · análisis editorial · sin afiliación", font=font(18), fill=(235,240,248,220))
+    d.text((52, H-60), f"{item['credit']} · análisis editorial · sin afiliación", font=font(18), fill=(235,240,248,220))
     return img, d
 
 
@@ -254,6 +270,7 @@ def concat_mp4(parts: list[Path], output: Path) -> None:
 
 
 def build_one(item: dict[str, Any], model_name: str) -> dict[str, Any]:
+    validate_rights(item)
     item_work = WORK / item["id"]
     item_work.mkdir(parents=True, exist_ok=True)
     source = item_work / "source.m4v"
@@ -314,7 +331,9 @@ def build_one(item: dict[str, Any], model_name: str) -> dict[str, Any]:
         "series": item["series"],
         "source_page": item["source_page"],
         "media_url": item["media_url"],
-        "credit": "Courtesy NASA/JPL-Caltech",
+        "credit": item["credit"],
+        "license": item["license"],
+        "rights_status": item["rights_status"],
         "quote_match_score": round(score, 1),
         "quote_matched": matched,
         "source_start": round(start, 2),
@@ -322,7 +341,7 @@ def build_one(item: dict[str, Any], model_name: str) -> dict[str, Any]:
         "output": final.name,
         "cover": cover.name,
         "duration_seconds": round(ffprobe_duration(final), 2),
-        "rights_note": "Editorial/informational use; retain credit; do not imply NASA/JPL/Caltech endorsement; review identifiable-person commercial use before paid advertising.",
+        "rights_note": "Human-approved manifest metadata is required before rendering; retain the declared credit and comply with the declared license.",
     }
     (OUTPUT / f"{item['id']}.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
@@ -336,6 +355,8 @@ def main() -> int:
     WORK.mkdir(parents=True, exist_ok=True)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+    for item in manifest:
+        validate_rights(item)
     results = []
     for item in manifest:
         print(f"\n=== Building {item['id']}: {item['title']} ===", flush=True)
