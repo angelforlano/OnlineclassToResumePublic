@@ -1,12 +1,7 @@
 name: Render LAOS real interview clips
 
 on:
-  push:
-    branches:
-      - automation/laos-real-clips-20260807
-    paths:
-      - "social/real-clips/**"
-      - ".github/workflows/render-laos-real-clips.yml"
+  # Rights-sensitive media rendering is a human-reviewed operation.
   workflow_dispatch:
 
 permissions:
