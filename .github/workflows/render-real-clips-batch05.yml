@@ -1,12 +1,7 @@
 name: Render LAOS real-source shorts batch 05
 
 on:
-  push:
-    branches:
-      - automation/laos-real-clips-20260807
-    paths:
-      - "social/real-clips/manifest_batch_05.json"
-      - ".github/workflows/render-real-clips-batch05.yml"
+  # Rights-sensitive media rendering is a human-reviewed operation.
   workflow_dispatch:
 
 permissions:
