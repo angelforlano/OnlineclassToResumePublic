@@ -1,0 +1,124 @@
+name: Re-render precision LAOS real-source shorts batch 04 v2
+
+on:
+  # Rights-sensitive media rendering is a human-reviewed operation.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  rerender:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install media stack
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install requests pillow
+      - name: Download Batch 04 draft
+        run: |
+          mkdir -p draft
+          gh run download 31219014329 -n LAOS-real-clips-batch-04 -D draft
+      - name: Precision-cut interview openings with normalized SAR
+        run: |
+          cat > /tmp/precision_batch04.py <<'PY'
+          from pathlib import Path
+          import json, re, subprocess
+          import requests
+          from PIL import Image, ImageDraw, ImageFont
+
+          ROOT=Path.cwd(); DRAFT=ROOT/'draft'; OUT=ROOT/'output-batch04-final'; WORK=ROOT/'work-batch04-final'
+          OUT.mkdir(exist_ok=True); WORK.mkdir(exist_ok=True)
+          W,H=1080,1920
+          BOLD='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'; REG='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+          ITEMS=[
+            dict(id='REAL-011', title='HUMANOS EN EL BUCLE, IA AL VOLANTE', account='@angeln.py', series='AGENTES SIN HUMO', url='https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20130919CoM20130919-1280.m4v', start=43.20,end=50.10,quote='Humanos en el bucle. Nosotros marcamos el destino; Curiosity decide cómo llegar.'),
+            dict(id='REAL-012', title='NASA DEJÓ DE CONSTRUIR UNA RED POR MISIÓN', account='@laostechnologies', series='PLATFORM THINKING', url='https://d2pn8kiwq2w21t.cloudfront.net/media/videosdsn20131219dsn20131218-1280.m4v', start=58.00,end=63.60,quote='En vez de hacer que cada misión construyera su propia red terrestre.'),
+            dict(id='REAL-013', title='ACELERACIÓN CON PACIENCIA', account='@angeln.py', series='INGENIERÍA EN 30S', url='https://d2pn8kiwq2w21t.cloudfront.net/media/videosdawn2014122920141229-1280.m4v', start=103.20,end=108.10,quote='Aceleración con paciencia: poca fuerza durante mucho tiempo.'),
+            dict(id='REAL-014', title='JÚPITER TE DEJA 1/25 DE LA LUZ', account='@laostechnologies', series='RESOURCE ENGINEERING', url='https://d2pn8kiwq2w21t.cloudfront.net/media/videosjuno20160622JPL-20160621-TECHf-0001-720cc.m4v', start=73.80,end=84.30,quote='En Júpiter no tienes una quinta parte de energía: tienes una veinticincoava parte.')]
+
+          def run(cmd,capture=False):
+              print('+',' '.join(map(str,cmd)),flush=True)
+              return subprocess.run(list(map(str,cmd)),check=True,text=True,stdout=subprocess.PIPE if capture else None,stderr=subprocess.PIPE if capture else None,timeout=1200)
+          def fnt(n,b=False): return ImageFont.truetype(BOLD if b else REG,n)
+          def wrap(d,text,font,maxw):
+              out=[]; cur=''
+              for word in text.split():
+                  trial=word if not cur else cur+' '+word
+                  if d.textbbox((0,0),trial,font=font)[2] <= maxw: cur=trial
+                  else:
+                      if cur: out.append(cur)
+                      cur=word
+              if cur: out.append(cur)
+              return out
+          def center(d,text,font,y,maxw,fill):
+              for line in wrap(d,text,font,maxw):
+                  bb=d.textbbox((0,0),line,font=font); d.text(((W-(bb[2]-bb[0]))/2,y),line,font=font,fill=fill,stroke_width=2,stroke_fill=(0,0,0,180)); y += bb[3]-bb[1]+12
+              return y
+          def overlay(item,path):
+              im=Image.new('RGBA',(W,H),(0,0,0,0)); d=ImageDraw.Draw(im,'RGBA')
+              d.rounded_rectangle((40,42,650,110),radius=32,fill=(3,8,17,225),outline=(59,163,255,170),width=2)
+              d.text((68,62),f"{item['account']} · {item['series']}",font=fnt(24,True),fill=(250,252,255,255))
+              d.rounded_rectangle((832,44,1036,108),radius=30,fill=(36,126,245,238)); d.text((873,64),'CLIP REAL',font=fnt(22,True),fill=(255,255,255,255))
+              d.rounded_rectangle((54,1110,1026,1810),radius=44,fill=(2,7,14,216),outline=(255,255,255,38),width=2)
+              y=center(d,item['title'],fnt(58,True),1170,880,(255,255,255,255))+34; center(d,item['quote'],fnt(36,True),y,850,(255,220,91,255))
+              d.text((48,H-52),'Courtesy NASA/JPL-Caltech · análisis editorial LAOS · sin afiliación',font=fnt(18),fill=(235,241,250,225)); im.save(path)
+          def download(url,path):
+              if path.exists() and path.stat().st_size>1_000_000:return
+              with requests.get(url,stream=True,timeout=180,headers={'User-Agent':'Mozilla/5.0 LAOS editorial renderer'}) as r:
+                  r.raise_for_status()
+                  with path.open('wb') as f:
+                      for chunk in r.iter_content(1024*1024):
+                          if chunk:f.write(chunk)
+          def duration(path):
+              return float(run(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',path],True).stdout.strip())
+
+          for item in ITEMS:
+              meta=json.loads((DRAFT/f"{item['id']}.json").read_text()); draft=DRAFT/meta['output']; old_sound=float(meta['source_end'])-float(meta['source_start'])
+              wd=WORK/item['id']; wd.mkdir(parents=True,exist_ok=True); src=wd/'source.m4v'; download(item['url'],src); png=wd/'overlay.png'; overlay(item,png)
+              sound=wd/'sound.mp4'; secs=item['end']-item['start']
+              vf=("[0:v]split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=34:1,eq=brightness=-0.22[bg2];[fg]scale=1000:1020:force_original_aspect_ratio=decrease[fg2];[bg2][fg2]overlay=(W-w)/2:160[scene];[scene][1:v]overlay=0:0,format=yuv420p,setsar=1[v]")
+              run(['ffmpeg','-y','-ss',f"{item['start']:.3f}",'-t',f"{secs:.3f}",'-i',src,'-loop','1','-i',png,'-filter_complex',vf,'-map','[v]','-map','0:a?','-af','loudnorm=I=-15:LRA=11:TP=-1.5,aresample=48000','-r','30','-c:v','libx264','-preset','veryfast','-crf','19','-c:a','aac','-b:a','160k','-ar','48000','-ac','2','-shortest',sound])
+              tail=wd/'tail.mp4'
+              run(['ffmpeg','-y','-ss',f"{old_sound:.3f}",'-i',draft,'-vf','setsar=1','-c:v','libx264','-preset','veryfast','-crf','19','-c:a','aac','-b:a','160k','-ar','48000','-ac','2',tail])
+              slug=re.sub(r'[^a-z0-9]+','-',item['title'].lower().translate(str.maketrans('áéíóúüñ','aeiouun'))).strip('-'); final=OUT/f"{item['id']}_{slug}.mp4"
+              concat='[0:v]setsar=1[v0];[1:v]setsar=1[v1];[v0][0:a][v1][1:a]concat=n=2:v=1:a=1[v][a]'
+              run(['ffmpeg','-y','-i',sound,'-i',tail,'-filter_complex',concat,'-map','[v]','-map','[a]','-c:v','libx264','-preset','veryfast','-crf','19','-c:a','aac','-b:a','160k','-movflags','+faststart',final])
+              cover=OUT/f"{item['id']}_{slug}.jpg"; run(['ffmpeg','-y','-ss','0.8','-i',final,'-frames:v','1','-q:v','2','-update','1',cover])
+              meta.update(source_start_precision=item['start'],source_end_precision=item['end'],duration_seconds_precision=round(duration(final),2),output=final.name,cover=cover.name)
+              (OUT/f"{item['id']}.json").write_text(json.dumps(meta,ensure_ascii=False,indent=2))
+          PY
+          python /tmp/precision_batch04.py
+      - name: Validate final batch
+        run: |
+          test "$(find output-batch04-final -maxdepth 1 -name '*.mp4' | wc -l)" -eq 4
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          for p in sorted(Path('output-batch04-final').glob('*.mp4')):
+              x=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_entries','stream=codec_type,codec_name,width,height,sample_aspect_ratio:format=duration','-of','json',str(p)],text=True))
+              v=next(s for s in x['streams'] if s['codec_type']=='video'); a=next(s for s in x['streams'] if s['codec_type']=='audio')
+              assert v['codec_name']=='h264' and int(v['width'])==1080 and int(v['height'])==1920 and v['sample_aspect_ratio']=='1:1'
+              assert a['codec_name']=='aac' and float(x['format']['duration'])>=18
+              print(p.name,x['format']['duration'])
+          PY
+      - name: Upload final Batch 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-04-final-v2
+          path: |
+            output-batch04-final/*.mp4
+            output-batch04-final/*.jpg
+            output-batch04-final/*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

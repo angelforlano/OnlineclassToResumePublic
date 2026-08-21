@@ -1,0 +1,72 @@
+name: Render LAOS real-source shorts batch 04
+
+on:
+  # Rights-sensitive media rendering is a human-reviewed operation.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install requests pillow rapidfuzz faster-whisper edge-tts
+
+      - name: Render Batch 04
+        working-directory: social/real-clips
+        run: |
+          rm -rf output work
+          python render.py --manifest manifest_batch_04.json --model tiny.en
+
+      - name: Validate technical delivery
+        working-directory: social/real-clips
+        run: |
+          test "$(find output -maxdepth 1 -name '*.mp4' | wc -l)" -eq 4
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          for p in sorted(Path('output').glob('*.mp4')):
+              raw = subprocess.check_output([
+                  'ffprobe','-v','error','-show_entries',
+                  'stream=codec_type,codec_name,width,height:format=duration',
+                  '-of','json',str(p)
+              ], text=True)
+              info=json.loads(raw)
+              v=next(s for s in info['streams'] if s['codec_type']=='video')
+              a=next(s for s in info['streams'] if s['codec_type']=='audio')
+              assert v['codec_name']=='h264', (p,v)
+              assert int(v['width'])==1080 and int(v['height'])==1920, (p,v)
+              assert a['codec_name']=='aac', (p,a)
+              assert float(info['format']['duration']) >= 18.0, (p,info['format']['duration'])
+              print(p.name, info['format']['duration'])
+          PY
+
+      - name: Upload Batch 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAOS-real-clips-batch-04
+          path: |
+            social/real-clips/output/*.mp4
+            social/real-clips/output/*.jpg
+            social/real-clips/output/*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

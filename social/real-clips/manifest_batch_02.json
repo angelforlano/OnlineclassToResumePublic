@@ -1,0 +1,70 @@
+[
+  {
+    "id": "REAL-005",
+    "account": "@angeln.py",
+    "series": "IA CON LÍMITES",
+    "title": "LA IA DECIDE CÓMO, NO DÓNDE",
+    "quote_en": "Humans are still in the loop. We're going to tell her where to go. Curiosity is going to decide how to get there.",
+    "quote_es": "Los humanos decidimos dónde. Curiosity decide cómo llegar.",
+    "analysis_voice": "Esta es una definición mucho más seria de autonomía. El humano fija el objetivo y las restricciones. El sistema elige la ruta, comprueba el terreno y corrige su posición. Un agente útil no sustituye la intención: la ejecuta dentro de límites claros.",
+    "cards": [
+      "EL HUMANO DEFINE EL OBJETIVO",
+      "EL SISTEMA ELIGE EL CAMINO",
+      "LAS POLÍTICAS MARCAN LOS LÍMITES"
+    ],
+    "cta": "Autonomía no significa ausencia de control.",
+    "source_page": "https://www.jpl.nasa.gov/videos/leave-the-driving-to-autonav/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20130919CoM20130919-1280.m4v"
+  },
+  {
+    "id": "REAL-006",
+    "account": "@angeln.py",
+    "series": "BUILD IN PUBLIC",
+    "title": "DE UNA SERVILLETA A MARTE",
+    "quote_en": "It's gone from designs on napkins, to Powerpoint, you know, to CAD drawings, to blueprints, and now it's a rover!",
+    "quote_es": "De diseños en servilletas a PowerPoint, CAD, planos… y ahora es un rover.",
+    "analysis_voice": "Las ideas no fracasan por empezar pequeñas. Fracasan cuando nunca cruzan la última milla. Una servilleta, un CAD y un prototipo solo valen si convergen en un sistema que realmente funciona.",
+    "cards": [
+      "IDEA",
+      "CAD + BLUEPRINT",
+      "PRODUCTO REAL"
+    ],
+    "cta": "Una idea vale cuando llega a funcionar.",
+    "source_page": "https://www.jpl.nasa.gov/videos/building-curiosity-first-test-drive-for-next-mars-rover/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmsl20100723bldgcuriosity20100723-1280.m4v"
+  },
+  {
+    "id": "REAL-007",
+    "account": "@laostechnologies",
+    "series": "RELIABILITY CUT",
+    "title": "LOS INGENIEROS AMAN LO ABURRIDO",
+    "quote_en": "Engineers love boring. Boring means clear skies, no problems, work is a little easier, and scientists get data they want.",
+    "quote_es": "Los ingenieros aman lo aburrido: cielo despejado, cero problemas y datos útiles.",
+    "analysis_voice": "La mejor infraestructura no intenta llamar la atención. Arranca, mide, responde y se recupera sin montar un espectáculo. Cuando todo es observable y predecible, lo aburrido se convierte en una ventaja competitiva.",
+    "cards": [
+      "LO ABURRIDO ES ESTABLE",
+      "LO ESTABLE ES MEDIBLE",
+      "LO MEDIBLE ES MEJORABLE"
+    ],
+    "cta": "La mejor infraestructura casi no se nota.",
+    "source_page": "https://www.jpl.nasa.gov/videos/10-years-on-mars-operating-a-rover/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmer20140123bMER10Challenges20140123-1280.m4v"
+  },
+  {
+    "id": "REAL-008",
+    "account": "@laostechnologies",
+    "series": "ENGINEERING BREAKDOWN",
+    "title": "SIETE SEGUNDOS DE TERROR… CADA DÍA",
+    "quote_en": "EDL had 7 minutes of terror. We have 7 seconds of terror everyday.",
+    "quote_es": "La misión tuvo siete minutos de terror. Nosotros tenemos siete segundos cada día.",
+    "analysis_voice": "Una demostración puede funcionar una vez. Un producto autónomo debe despegar, decidir y aterrizar una y otra vez. La repetición convierte un truco impresionante en ingeniería fiable.",
+    "cards": [
+      "UNA DEMO FUNCIONA UNA VEZ",
+      "UN PRODUCTO DEBE FUNCIONAR SIEMPRE",
+      "REPETIR CONVIERTE RIESGO EN INGENIERÍA"
+    ],
+    "cta": "La autonomía se demuestra al repetir.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-mars-helicopter/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosmars20150122mars20150122-1280.m4v"
+  }
+]

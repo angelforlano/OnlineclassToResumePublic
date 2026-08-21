@@ -1,0 +1,70 @@
+[
+  {
+    "id": "REAL-001",
+    "account": "@angeln.py",
+    "series": "IA SIN HUMO",
+    "title": "LA IA PERDIÓ LA CARRERA",
+    "quote_en": "Although slower, the A.I.-piloted drone completed the course with accuracy",
+    "quote_es": "Aunque fue más lenta, la IA completó el circuito con precisión.",
+    "analysis_voice": "Esta frase importa porque rapidez y fiabilidad no son lo mismo. En LAOS vimos agentes leer durante horas sin cerrar una tarea. La métrica correcta no es cuánto se mueve el agente, sino qué resultado verificable deja.",
+    "cards": [
+      "RÁPIDO NO ES IGUAL A FIABLE",
+      "MUCHA ACTIVIDAD PUEDE DEJAR CERO RESULTADOS",
+      "MIDE ENTREGAS VERIFICABLES, NO MOVIMIENTO"
+    ],
+    "cta": "¿Qué prefieres: velocidad o consistencia?",
+    "source_page": "https://www.jpl.nasa.gov/videos/drone-race-human-versus-ai/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20171121JPL-20171102-TECHp-0001-720cc.m4v"
+  },
+  {
+    "id": "REAL-002",
+    "account": "@laostechnologies",
+    "series": "ROBOTLAB CUT",
+    "title": "LAS RUEDAS SON MEJORES… HASTA QUE DEJAN DE SERLO",
+    "quote_en": "If you can get away with wheels, wheels are great. They're the most efficient ways of getting around. But once you get into terrain that's too rough, then we need to switch over to a different method",
+    "quote_es": "Las ruedas son geniales… hasta que el terreno exige otro método.",
+    "analysis_voice": "La forma correcta de un robot depende de su misión. Las ruedas son eficientes, pero no sirven para todos los terrenos. En RobotLab, primero se define el entorno y después la morfología.",
+    "cards": [
+      "EL TERRENO DECIDE LA MORFOLOGÍA",
+      "NO COPIES LA FORMA HUMANA POR COSTUMBRE",
+      "MISIÓN PRIMERO · ROBOT DESPUÉS"
+    ],
+    "cta": "Diseña para el problema, no para la foto.",
+    "source_page": "https://www.jpl.nasa.gov/videos/crazy-engineering-robosimian-robot/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20150603JPL-20150602-mTech-0000-CrazyEngineering_RoboSimian-A-1280.m4v"
+  },
+  {
+    "id": "REAL-003",
+    "account": "@angeln.py",
+    "series": "TRUE TECH CRIME",
+    "title": "NASA FALLÓ VARIAS VECES",
+    "quote_en": "we've been unsuccessful. As you can see, this is a very challenging problem. And sometimes it appears intractable, but we're engineers and we love solving challenging problems",
+    "quote_es": "Lo intentaron varias veces sin éxito. Después cambiaron la hipótesis.",
+    "analysis_voice": "La ingeniería no consiste en repetir el mismo intento. Consiste en registrar, cambiar una hipótesis y volver a medir. En LAOS, un watchdog reinició mil quinientas dieciocho veces un servicio que ya estaba sano. Automatizar sin estado solo automatiza el caos.",
+    "cards": [
+      "FALLAR NO ES REPETIR A CIEGAS",
+      "LOGS → HIPÓTESIS → PRUEBA",
+      "AUTOMATIZAR SIN ESTADO AUTOMATIZA EL CAOS"
+    ],
+    "cta": "El error sirve cuando cambia tu siguiente intento.",
+    "source_page": "https://www.jpl.nasa.gov/videos/nasa-insights-robotic-arm-helps-out-its-mole-on-mars/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosinsight20191003JPL-20191003-INSIGHf-0001-720cc.m4v"
+  },
+  {
+    "id": "REAL-004",
+    "account": "@laostechnologies",
+    "series": "ROBOTICS BREAKDOWN",
+    "title": "NO AÑADAS IA AL FINAL",
+    "quote_en": "The more LEMUR climbs, the better choices it makes",
+    "quote_es": "Cuanto más escala LEMUR, mejores decisiones toma.",
+    "analysis_voice": "Este robot combina LiDAR, microespinas y decisiones locales. La inteligencia no se añadió al final como decoración: nació con la mecánica y los sensores. Ese es el principio correcto para RobotLab.",
+    "cards": [
+      "MECÁNICA + SENSORES + DECISIÓN",
+      "LA IA NO ES UNA CAPA DECORATIVA",
+      "DISEÑA EL SISTEMA COMPLETO DESDE EL PRINCIPIO"
+    ],
+    "cta": "La mejor IA empieza antes del modelo.",
+    "source_page": "https://www.jpl.nasa.gov/videos/nasa-climbing-robot-scales-cliffs-and-looks-for-life/",
+    "media_url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videostechnology20190710JPL-20190702-TECHf-0001-720cc.m4v"
+  }
+]
