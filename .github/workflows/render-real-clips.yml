@@ -28,16 +28,16 @@ jobs:
         run: |
           cat > render_real_clips.py <<'PY'
           from __future__ import annotations
-          
+
           import json, re, subprocess, sys
           from pathlib import Path
           from typing import Any
-          
+
           import requests
           from PIL import Image, ImageDraw, ImageFont
           from rapidfuzz import fuzz
           from faster_whisper import WhisperModel
-          
+
           ROOT = Path(__file__).resolve().parent
           SRC = ROOT / "sources"
           OUT = ROOT / "output"
@@ -45,7 +45,7 @@ jobs:
           W, H = 1080, 1920
           FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
           FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-          
+
           ITEMS = [
               {
                   "id": "REAL-001", "account": "@angeln.py", "series": "IA SIN HUMO",
@@ -78,22 +78,22 @@ jobs:
                   "url": "https://d2pn8kiwq2w21t.cloudfront.net/media/videosinsight20191003JPL-20191003-INSIGHf-0001-720cc.m4v",
               },
           ]
-          
-          
+
+
           def run(cmd: list[str], capture: bool = False, timeout: int = 900) -> subprocess.CompletedProcess[str]:
               print("+", " ".join(cmd), flush=True)
               return subprocess.run(cmd, check=True, text=True,
                                     stdout=subprocess.PIPE if capture else None,
                                     stderr=subprocess.PIPE if capture else None,
                                     timeout=timeout)
-          
-          
+
+
           def duration(path: Path) -> float:
               p = run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                        "-of", "default=nw=1:nk=1", str(path)], capture=True)
               return float(p.stdout.strip())
-          
-          
+
+
           def download(url: str, path: Path) -> None:
               if path.exists() and path.stat().st_size > 1_000_000:
                   return
@@ -106,12 +106,12 @@ jobs:
                               f.write(chunk)
               if path.stat().st_size < 1_000_000:
                   raise RuntimeError(f"Source too small: {path}")
-          
-          
+
+
           def norm(text: str) -> str:
               return re.sub(r"[^a-z0-9 ]", " ", text.lower()).replace("  ", " ").strip()
-          
-          
+
+
           def find_quote(model: WhisperModel, source: Path, anchor: str) -> tuple[float, float, str, float]:
               segs, _ = model.transcribe(str(source), language="en", beam_size=3, vad_filter=True)
               rows = [{"start": float(s.start), "end": float(s.end), "text": s.text.strip()} for s in segs]
@@ -131,12 +131,12 @@ jobs:
               end = min(start + 10.0, best[1] + 0.7)
               print(f"MATCH {best[3]:.1f}% {start:.2f}-{end:.2f}: {best[2]}")
               return start, end, best[2], best[3]
-          
-          
+
+
           def fnt(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
               return ImageFont.truetype(FONT_BOLD if bold else FONT_REG, size)
-          
-          
+
+
           def wrap(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
               lines: list[str] = []
               current = ""
@@ -151,8 +151,8 @@ jobs:
               if current:
                   lines.append(current)
               return lines
-          
-          
+
+
           def centered(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont,
                        y: int, max_w: int, fill: tuple[int, int, int, int]) -> int:
               for line in wrap(draw, text, font, max_w):
@@ -161,8 +161,8 @@ jobs:
                             stroke_width=2, stroke_fill=(0, 0, 0, 170))
                   y += (box[3] - box[1]) + 12
               return y
-          
-          
+
+
           def overlay(item: dict[str, Any], kind: str, main: str, sub: str, path: Path) -> None:
               img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
               d = ImageDraw.Draw(img, "RGBA")
@@ -180,8 +180,8 @@ jobs:
               d.text((52, H - 52), "Courtesy NASA/JPL-Caltech · edición y análisis LAOS · sin afiliación",
                      font=fnt(18), fill=(235, 241, 250, 220))
               img.save(path)
-          
-          
+
+
           def render(source: Path, start: float, seconds: float, png: Path, out: Path, original_audio: bool) -> None:
               inputs = ["ffmpeg", "-y", "-ss", f"{start:.3f}", "-t", f"{seconds:.3f}", "-i", str(source),
                         "-loop", "1", "-i", str(png)]
@@ -199,16 +199,16 @@ jobs:
               inputs += ["-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
                          "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-shortest", str(out)]
               run(inputs)
-          
-          
+
+
           def concat(parts: list[Path], out: Path) -> None:
               listing = out.with_suffix(".txt")
               listing.write_text("".join(f"file '{p.resolve().as_posix()}'\n" for p in parts), encoding="utf-8")
               run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
                    "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", str(out)])
-          
-          
+
+
           def main() -> None:
               for p in (SRC, OUT, WORK):
                   p.mkdir(parents=True, exist_ok=True)
@@ -257,8 +257,8 @@ jobs:
                                   "rights_note": "Editorial/informational prototype. Retain credit; do not imply endorsement; review identifiable-person use before paid advertising."})
               (OUT / "manifest.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
               print(json.dumps(results, ensure_ascii=False, indent=2))
-          
-          
+
+
           if __name__ == "__main__":
               main()
           PY
